@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Firefox Screen Share</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f9f9f9;
+            width: 400px;
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px;
+        }
+
+        h2 {
+            margin: 5px 0;
+        }
+
+        video#preview {
+            width: 100%;
+            height: auto;
+            max-height: 220px;
+            background: black;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background: #0077ff;
+            color: white;
+        }
+
+        button:disabled {
+            background: #aaa;
+        }
+    </style>
+</head>
+<body>
+<h2>Firefox Screen Share</h2>
+<video id="preview" autoplay playsinline muted></video>
+<button id="toggleCapture">Start Capture</button>
+<script src="popup.js"></script>
+</body>
+</html>
