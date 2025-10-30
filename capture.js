@@ -1,10 +1,8 @@
 const startBtn = document.getElementById("start");
 const stopBtn = document.getElementById("stop");
 const videoEl = document.getElementById("preview");
-let stream;
-let pc;
-let ws;
-const pcs = new Map(); // Map<viewerId, RTCPeerConnection>
+let stream, ws;
+const pcs = new Map();
 
 startBtn.addEventListener("click", async () => {
     try {
@@ -18,8 +16,9 @@ startBtn.addEventListener("click", async () => {
         ws.onmessage = async (event) => {
             const msg = JSON.parse(event.data);
 
-            if (msg.type === "viewer-joined") {
-                console.log("Viewer joined:", msg.id);
+            if (msg.type === "room-code") {
+                alert(`Your stream code is: ${msg.code}`);
+            } else if (msg.type === "viewer-joined") {
                 await createOffer(msg.id);
             } else if (msg.type === "answer") {
                 const pc = pcs.get(msg.id);
@@ -32,17 +31,21 @@ startBtn.addEventListener("click", async () => {
                 if (pc) {
                     pc.close();
                     pcs.delete(msg.id);
-                    console.log("Viewer disconnected:", msg.id);
                 }
             }
         };
+
+        stream.getVideoTracks()[0].onended = stopCapture;
     } catch (err) {
         console.error("Capture failed:", err);
+        alert("Failed to start screen capture: " + err.message);
     }
 });
 
 async function createOffer(viewerId) {
-    const pc = new RTCPeerConnection();
+    const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
     pcs.set(viewerId, pc);
 
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -55,7 +58,6 @@ async function createOffer(viewerId) {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-
     ws.send(JSON.stringify({ type: "offer", id: viewerId, offer }));
 }
 
@@ -64,11 +66,9 @@ function stopCapture() {
     videoEl.srcObject = null;
     startBtn.disabled = false;
     stopBtn.disabled = true;
-
     for (const [, pc] of pcs) pc.close();
     pcs.clear();
     ws?.close();
 }
 
 stopBtn.addEventListener("click", stopCapture);
-
