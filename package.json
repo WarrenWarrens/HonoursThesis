@@ -1,0 +1,27 @@
+{
+  "name": "honoursthesis",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test.txt specified\" && exit 1",
+    "start": "node server.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WarrenWarrens/HonoursThesis.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/WarrenWarrens/HonoursThesis/issues"
+  },
+  "homepage": "https://github.com/WarrenWarrens/HonoursThesis#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3"
+  }
+}

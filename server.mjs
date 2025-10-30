@@ -1,4 +1,4 @@
-// server.mjs
+//server.mjs
 import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
@@ -14,7 +14,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 let broadcaster = null;
-const viewers = new Map(); // Map<viewerId, ws>
+const viewers = new Map();
 
 wss.on("connection", (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -22,13 +22,13 @@ wss.on("connection", (ws, req) => {
 
     if (role === "broadcaster") {
         broadcaster = ws;
-        console.log("🎥 Broadcaster connected");
+        console.log("Broadcaster connected");
     } else if (role === "viewer") {
         const id = randomUUID();
         viewers.set(id, ws);
-        console.log(`👀 Viewer connected: ${id}`);
+        console.log(`Viewer connected: ${id}`);
 
-        // Notify broadcaster that a new viewer joined
+        //sends a notification to the streamer that a viewer has joined
         if (broadcaster && broadcaster.readyState === 1) {
             broadcaster.send(JSON.stringify({ type: "viewer-joined", id }));
         }
@@ -51,15 +51,14 @@ wss.on("connection", (ws, req) => {
             return;
         }
 
-        // Route messages appropriately
         if (role === "broadcaster") {
-            // Broadcaster → Viewer
+            //streamer to viewer
             const target = viewers.get(msg.id);
             if (target && target.readyState === 1) {
                 target.send(JSON.stringify(msg));
             }
         } else if (role === "viewer") {
-            // Viewer → Broadcaster
+            //viewer to streamer
             if (broadcaster && broadcaster.readyState === 1) {
                 broadcaster.send(JSON.stringify({ ...msg, id: [...viewers].find(([key, val]) => val === ws)?.[0] }));
             }
@@ -68,9 +67,9 @@ wss.on("connection", (ws, req) => {
 
     ws.on("close", () => {
         if (role === "broadcaster") {
-            console.log("🛑 Broadcaster disconnected");
+            console.log("Broadcaster disconnected");
             broadcaster = null;
-            // Inform all viewers
+            //sends notification to all viewers that the streamer has disconnected
             for (const [, viewer] of viewers) {
                 if (viewer.readyState === 1) {
                     viewer.send(JSON.stringify({ type: "broadcaster-disconnected" }));
@@ -83,5 +82,5 @@ wss.on("connection", (ws, req) => {
 app.use(express.static(path.join(__dirname, "Viewer")));
 
 server.listen(8080, () => {
-    console.log("✅ Server running → http://localhost:8080");
+    console.log("Server running → http://localhost:8080");
 });
