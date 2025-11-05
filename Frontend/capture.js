@@ -11,7 +11,7 @@ startBtn.addEventListener("click", async () => {
         startBtn.disabled = true;
         stopBtn.disabled = false;
 
-        ws = new WebSocket("ws://localhost:8080?role=broadcaster");
+        ws = new WebSocket("wss://honoursthesisstreambackend.onrender.com");
 
         ws.onmessage = async (event) => {
             const msg = JSON.parse(event.data);
