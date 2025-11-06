@@ -10,8 +10,7 @@ startBtn.addEventListener("click", async () => {
         videoEl.srcObject = stream;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-
-        ws = new WebSocket("wss://honoursthesisstreambackend.onrender.com");
+        ws = new WebSocket("wss://honoursthesisstreambackend.onrender.com?role=broadcaster");
 
         ws.onmessage = async (event) => {
             const msg = JSON.parse(event.data);
