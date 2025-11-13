@@ -30,7 +30,26 @@ function startViewer(code) {
         }
 
         if (msg.type === "offer") {
-            pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+            const ICE_SERVERS = {
+                iceServers: [{
+                    urls: [ "stun:us-turn3.xirsys.com" ]
+                }, {
+                    username: "nKr-LEorDuJH2cS1BS-YwjffBRrWL4i2iHIhdlCh1H1fzWqFxfb0Wo_S4_Ne34HdAAAAAGkWF8ZSV2FycmVu",
+                    credential: "ae75724a-c0b7-11f0-a466-0242ac140004",
+                    urls: [
+                        "turn:us-turn3.xirsys.com:80?transport=udp",
+                        "turn:us-turn3.xirsys.com:3478?transport=udp",
+                        "turn:us-turn3.xirsys.com:80?transport=tcp",
+                        "turn:us-turn3.xirsys.com:3478?transport=tcp",
+                        "turns:us-turn3.xirsys.com:443?transport=tcp",
+                        "turns:us-turn3.xirsys.com:5349?transport=tcp"
+                    ]
+                }]
+
+
+            };
+
+            const pc = new RTCPeerConnection(ICE_SERVERS);
 
             pc.ontrack = (event) => {
                 videoEl.srcObject = event.streams[0];
