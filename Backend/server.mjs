@@ -23,6 +23,7 @@ function generateRoomCode() {
     return code;
 }
 
+
 wss.on("connection", (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const role = url.searchParams.get("role");
@@ -83,12 +84,31 @@ wss.on("connection", (ws, req) => {
     //streamer to viewer
     ws.on("message", (message) => {
         const msg = JSON.parse(message);
+
+        // 🧭 Case 1: Broadcaster → Viewer
         if (role === "broadcaster" && msg.id && msg.type !== "room-code") {
             const room = broadcasters.get(ws.roomCode);
             const target = room?.viewers.get(msg.id);
-            if (target && target.readyState === 1) target.send(JSON.stringify(msg));
+            if (target && target.readyState === 1) {
+                target.send(JSON.stringify(msg));
+            }
+        }
+
+        // 🧭 Case 2: Viewer → Streamer (viewer pressed "Notify")
+        else if (role === "viewer" && msg.type === "viewer_notify") {
+            const roomEntry = Array.from(broadcasters.entries()).find(([code, { viewers }]) =>
+                viewers.has(ws)
+            );
+            if (roomEntry) {
+                const [roomCode, { ws: broadcasterWs }] = roomEntry;
+                if (broadcasterWs.readyState === 1) {
+                    broadcasterWs.send(JSON.stringify({ type: "viewer_notify" }));
+                    console.log(`Viewer in room ${roomCode} sent a notify to streamer`);
+                }
+            }
         }
     });
+
 });
 
 app.use(express.static(path.join(__dirname, "Viewer")));
@@ -96,3 +116,4 @@ app.use(express.static(path.join(__dirname, "Viewer")));
 server.listen(8080, () => {
     console.log("Server running → http://localhost:8080");
 });
+

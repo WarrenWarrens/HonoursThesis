@@ -71,3 +71,18 @@ function stopCapture() {
 }
 
 stopBtn.addEventListener("click", stopCapture);
+ws.addEventListener("message", (event) => {
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === "viewer_notify") {
+        showNotificationPopup();
+    }
+
+});
+
+function showNotificationPopup() {
+    const popup = document.getElementById("notify-popup");
+    popup.style.display = "block";
+    setTimeout(() => popup.style.display = "none", 3000);
+}
+

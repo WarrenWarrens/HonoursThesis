@@ -55,3 +55,10 @@ function startViewer(code) {
         }
     };
 }
+
+const notifyBtn = document.getElementById("notifyBtn");
+
+notifyBtn.addEventListener("click", () => {
+    ws.send(JSON.stringify({ type: "viewer_notify" }));
+    alert("Notification sent to streamer!");
+});
