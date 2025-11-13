@@ -3,6 +3,7 @@ const joinBtn = document.getElementById("joinBtn");
 const codeInput = document.getElementById("codeInput");
 const errorEl = document.getElementById("error");
 const videoEl = document.getElementById("remoteVideo");
+const notifyBtn = document.getElementById("notifyBtn");
 let ws, pc;
 
 joinBtn.onclick = () => {
@@ -17,7 +18,30 @@ joinBtn.onclick = () => {
 function startViewer(code) {
     joinForm.style.display = "none";
     videoEl.style.display = "block";
+
+    // connect to backend server
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
+
+    ws.onopen = () => {
+        console.log("Viewer connected");
+        // ✅ send join message using the correct variable
+        ws.send(JSON.stringify({ type: "join", role: "viewer", code }));
+    };
+
+    // ✅ viewer’s notify button
+    notifyBtn.addEventListener("click", () => {
+        if (ws?.readyState === WebSocket.OPEN) {
+            console.log("Viewer pressed button!");
+            ws.send(JSON.stringify({
+                type: "viewer_notify",
+                code,
+                message: "Viewer pressed the button!"
+            }));
+            alert("Notification sent to the streamer!");
+        } else {
+            alert("Connection not ready yet!");
+        }
+    });
 
     ws.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
@@ -55,10 +79,3 @@ function startViewer(code) {
         }
     };
 }
-
-const notifyBtn = document.getElementById("notifyBtn");
-
-notifyBtn.addEventListener("click", () => {
-    ws.send(JSON.stringify({ type: "viewer_notify" }));
-    alert("Notification sent to streamer!");
-});

@@ -10,9 +10,14 @@ startBtn.addEventListener("click", async () => {
         videoEl.srcObject = stream;
         startBtn.disabled = true;
         stopBtn.disabled = false;
+
         ws = new WebSocket("wss://honoursthesisstreambackend.onrender.com?role=broadcaster");
 
-        ws.onmessage = async (event) => {
+        ws.addEventListener("open", () => {
+            console.log("Broadcaster connected");
+        });
+
+        ws.addEventListener("message", async (event) => {
             const msg = JSON.parse(event.data);
 
             if (msg.type === "room-code") {
@@ -31,8 +36,11 @@ startBtn.addEventListener("click", async () => {
                     pc.close();
                     pcs.delete(msg.id);
                 }
+            } else if (msg.type === "viewer_notify") {
+                console.log("📩 Viewer notification:", msg.message);
+                showNotificationPopup(msg.message);
             }
-        };
+        });
 
         stream.getVideoTracks()[0].onended = stopCapture;
     } catch (err) {
@@ -71,18 +79,12 @@ function stopCapture() {
 }
 
 stopBtn.addEventListener("click", stopCapture);
-ws.addEventListener("message", (event) => {
-    const msg = JSON.parse(event.data);
 
-    if (msg.type === "viewer_notify") {
-        showNotificationPopup();
-    }
-
-});
-
-function showNotificationPopup() {
+// ✅ fixed: popup function
+function showNotificationPopup(message) {
     const popup = document.getElementById("notify-popup");
+    if (!popup) return;
+    popup.textContent = message || "Viewer sent a notification!";
     popup.style.display = "block";
-    setTimeout(() => popup.style.display = "none", 3000);
+    setTimeout(() => (popup.style.display = "none"), 3000);
 }
-
