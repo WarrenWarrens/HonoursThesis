@@ -23,6 +23,26 @@ function generateRoomCode() {
     return code;
 }
 
+wss.on('connection', (socket) => {
+    socket.on('message', (data) => {
+        const msg = JSON.parse(data);
+
+        if (msg.type === 'viewerMessage') {
+            console.log(`Viewer in ${msg.code} sent message: ${msg.message}`);
+
+            // Find the broadcaster for this code
+            const broadcaster = broadcasters[msg.code];
+            if (broadcaster) {
+                broadcaster.send(JSON.stringify({
+                    type: 'viewerNotification',
+                    message: msg.message
+                }));
+            }
+        }
+
+        // Existing logic like join/offer/answer candidates etc.
+    });
+});
 
 wss.on("connection", (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);

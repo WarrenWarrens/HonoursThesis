@@ -19,6 +19,21 @@ function startViewer(code) {
     videoEl.style.display = "block";
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
 
+    ws.onopen = () => {
+        console.log("Viewer connected");
+        ws.send(JSON.stringify({ type: "join", role: "viewer", code: streamCode }));
+    };
+
+    document.getElementById("notifyBtn").addEventListener("click", () => {
+        console.log("Viewer pressed button!");
+        ws.send(JSON.stringify({
+            type: "viewerMessage",
+            code: streamCode,
+            message: "Viewer pressed the button!"
+        }));
+        alert("Notification sent to the streamer!");
+    });
+
     ws.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
 
