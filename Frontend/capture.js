@@ -80,7 +80,7 @@ function stopCapture() {
 
 stopBtn.addEventListener("click", stopCapture);
 
-// ✅ fixed: popup function
+// ✅fixed: popup function
 function showNotificationPopup(message) {
     const popup = document.getElementById("notify-popup");
     if (!popup) return;

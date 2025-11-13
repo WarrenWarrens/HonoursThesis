@@ -75,7 +75,7 @@ function startViewer(code) {
             await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
         } else if (msg.type === "broadcaster-disconnected") {
             alert("Broadcaster ended the stream.");
-            videoEl.srcObject = null;
+            videoEl.srcObject =null;
         }
     };
 }
