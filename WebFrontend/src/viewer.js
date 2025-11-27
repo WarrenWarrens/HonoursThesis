@@ -1,3 +1,4 @@
+// viewer.js (replace whole file)
 const joinForm = document.getElementById("joinForm");
 const joinBtn = document.getElementById("joinBtn");
 const codeInput = document.getElementById("codeInput");
@@ -19,21 +20,19 @@ function startViewer(code) {
     joinForm.style.display = "none";
     videoEl.style.display = "block";
 
-    // connect to backend server
+    // Use your Render backend (secure). For pure LAN testing replace with ws://<backend-lan-ip>:8080
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
 
     ws.onopen = () => {
-        console.log("Viewer connected");
-        // ✅ send join message using the correct variable
+        console.log("Viewer connected (WS open)");
         ws.send(JSON.stringify({ type: "join", role: "viewer", code }));
     };
 
-    // ✅ viewer’s notify button
     notifyBtn.addEventListener("click", () => {
         if (ws?.readyState === WebSocket.OPEN) {
             console.log("Viewer pressed button!");
             ws.send(JSON.stringify({
-                type: "viewer_notify",
+                type: "viewerMessage",
                 code,
                 message: "Viewer pressed the button!"
             }));
@@ -45,6 +44,7 @@ function startViewer(code) {
 
     ws.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
+        console.log("Viewer WS message:", msg.type, msg);
 
         if (msg.type === "error") {
             errorEl.textContent = msg.message;
@@ -54,50 +54,53 @@ function startViewer(code) {
         }
 
         if (msg.type === "offer") {
-            const ICE_SERVERS = {
-                iceServers: [{
-                    urls: [ "stun:us-turn3.xirsys.com" ]
-                }, {
-                    username: "nKr-LEorDuJH2cS1BS-YwjffBRrWL4i2iHIhdlCh1H1fzWqFxfb0Wo_S4_Ne34HdAAAAAGkWF8ZSV2FycmVu",
-                    credential: "ae75724a-c0b7-11f0-a466-0242ac140004",
-                    urls: [
-                        "turn:us-turn3.xirsys.com:80?transport=udp",
-                        "turn:us-turn3.xirsys.com:3478?transport=udp",
-                        "turn:us-turn3.xirsys.com:80?transport=tcp",
-                        "turn:us-turn3.xirsys.com:3478?transport=tcp",
-                        "turns:us-turn3.xirsys.com:443?transport=tcp",
-                        "turns:us-turn3.xirsys.com:5349?transport=tcp"
-                    ]
-                }]
+            // STUN-only for LAN testing (simple and reliable on same wifi)
+            const ICE_CONFIG = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
-
-            };
-
-            pc = new RTCPeerConnection(ICE_SERVERS);
+            // Important: assign to outer-scoped pc variable
+            pc = new RTCPeerConnection(ICE_CONFIG);
 
             pc.ontrack = (event) => {
+                console.log("viewer: got track, streams:", event.streams);
                 videoEl.srcObject = event.streams[0];
             };
 
             pc.onicecandidate = (event) => {
                 if (event.candidate) {
+                    console.log("viewer: sending local ICE candidate", event.candidate);
                     ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
                 }
             };
 
-            await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
+            pc.oniceconnectionstatechange = () => console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
+            pc.onconnectionstatechange = () => console.log("viewer pc.connectionState:", pc.connectionState);
 
-            ws.send(JSON.stringify({ type: "answer", answer }));
-
-        }
-        else if (msg.type === "candidate" && pc) {
-            await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-        }
-        else if (msg.type === "broadcaster-disconnected") {
+            try {
+                await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                ws.send(JSON.stringify({ type: "answer", answer }));
+                console.log("viewer: answered offer");
+            } catch (err) {
+                console.error("viewer: error handling offer:", err);
+            }
+        } else if (msg.type === "candidate") {
+            if (!pc) {
+                console.warn("viewer: received candidate but pc is not ready yet");
+            } else {
+                console.log("viewer: adding remote candidate", msg.candidate);
+                try {
+                    await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+                } catch (err) {
+                    console.error("viewer: addIceCandidate failed:", err);
+                }
+            }
+        } else if (msg.type === "broadcaster-disconnected") {
             alert("Broadcaster ended the stream.");
-            videoEl.srcObject =null;
+            videoEl.srcObject = null;
         }
     };
+
+    ws.onerror = (e) => console.error("Viewer WS error:", e);
+    ws.onclose = () => console.log("Viewer WS closed");
 }
