@@ -14,57 +14,32 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-const broadcasters = new Map(); //Map<roomCode, { ws, viewers: Map<viewerId, ws> }>
+const broadcasters = new Map();
+// Map<roomCode, { ws, viewers: Map<viewerId, ws> }>
 
 function generateRoomCode() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; //exclude 0/O/I/l
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let code = "";
     for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
     return code;
 }
-
-wss.on('connection', (socket) => {
-    socket.on('message', (data) => {
-        const msg = JSON.parse(data);
-
-        if (msg.type === 'viewerMessage') {
-            console.log(`Viewer in ${msg.code} sent message: ${msg.message}`);
-
-            const broadcaster = broadcasters[msg.code];
-            if (broadcaster) {
-                broadcaster.send(JSON.stringify({
-                    type: 'viewerNotification',
-                    message: msg.message
-                }));
-            }
-        }
-
-    });
-
-    if (msg.type === "viewerMessage") {
-        const host = rooms.get(code)?.host;
-        if (host) {
-            host.send(JSON.stringify({
-                type: "viewerMessage",
-                message: msg.message
-            }));
-        }
-    }
-
-});
 
 wss.on("connection", (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const role = url.searchParams.get("role");
     const code = url.searchParams.get("code");
 
+    // -----------------------------------
+    // BROADCASTER CONNECTS
+    // -----------------------------------
     if (role === "broadcaster") {
         const roomCode = generateRoomCode();
         broadcasters.set(roomCode, { ws, viewers: new Map() });
+
         ws.roomCode = roomCode;
+
         console.log(`Broadcaster started stream with code ${roomCode}`);
 
-        //sends room code back to streamer
         ws.send(JSON.stringify({ type: "room-code", code: roomCode }));
 
         ws.on("close", () => {
@@ -79,9 +54,14 @@ wss.on("connection", (ws, req) => {
                 broadcasters.delete(roomCode);
             }
         });
+
+        return;
     }
 
-    else if (role === "viewer" && code) {
+    // -----------------------------------
+    // VIEWER CONNECTS
+    // -----------------------------------
+    if (role === "viewer" && code) {
         const room = broadcasters.get(code.toUpperCase());
         if (!room) {
             ws.send(JSON.stringify({ type: "error", message: "Invalid or expired code." }));
@@ -91,58 +71,63 @@ wss.on("connection", (ws, req) => {
 
         const id = randomUUID();
         room.viewers.set(id, ws);
+
         console.log(`Viewer joined room ${code} (${id})`);
 
-        //notifies streamer that a viewer has joined
         room.ws.send(JSON.stringify({ type: "viewer-joined", id }));
 
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
+
+            // NEW FEATURE: viewer sends message to streamer overlay
+            if (msg.type === "viewerMessage") {
+                console.log(`Viewer in ${code} sent: ${msg.message}`);
+
+                room.ws.send(JSON.stringify({
+                    type: "viewerMessage",
+                    id,
+                    message: msg.message
+                }));
+
+                return;
+            }
+
+            // normal viewer → broadcaster relay
             room.ws.send(JSON.stringify({ ...msg, id }));
         });
 
         ws.on("close", () => {
             console.log(`Viewer left room ${code} (${id})`);
             room.viewers.delete(id);
+
             if (room.ws.readyState === 1) {
                 room.ws.send(JSON.stringify({ type: "viewer-left", id }));
             }
         });
+
+        return;
     }
 
-    //streamer to viewer
+    // -----------------------------------
+    // BROADCASTER → VIEWER
+    // -----------------------------------
     ws.on("message", (message) => {
         const msg = JSON.parse(message);
 
-        //Broadcaster to Viewer
         if (role === "broadcaster" && msg.id && msg.type !== "room-code") {
             const room = broadcasters.get(ws.roomCode);
             const target = room?.viewers.get(msg.id);
+
             if (target && target.readyState === 1) {
                 target.send(JSON.stringify(msg));
             }
         }
-
-        //Viewer to Streamer
-        else if (role === "viewer" && msg.type === "viewer_notify") {
-            const roomEntry = Array.from(broadcasters.entries()).find(([code, { viewers }]) =>
-                viewers.has(ws)
-            );
-            if (roomEntry) {
-                const [roomCode, { ws: broadcasterWs }] = roomEntry;
-                if (broadcasterWs.readyState === 1) {
-                    broadcasterWs.send(JSON.stringify({ type: "viewer_notify" }));
-                    console.log(`Viewer in room ${roomCode} sent a notify to streamer`);
-                }
-            }
-        }
     });
-
 });
 
+// Viewer assets
 app.use(express.static(path.join(__dirname, "Viewer")));
 
 server.listen(8080, () => {
     console.log("Server running → http://localhost:8080");
 });
-
