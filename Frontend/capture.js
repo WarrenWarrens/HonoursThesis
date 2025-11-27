@@ -103,15 +103,19 @@ document.addEventListener("DOMContentLoaded", () => {
         pc.oniceconnectionstatechange = () => console.log(`broadcaster pc[${viewerId}] iceConnectionState:`, pc.iceConnectionState);
         pc.onconnectionstatechange = () => console.log(`broadcaster pc[${viewerId}] connectionState:`, pc.connectionState);
 
-        pc.ontrack = (ev) => {
-            console.log("broadcaster pc ontrack? (unexpected for sendonly)", ev);
-        };
-
+        // send tracks from screen capture
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        ws.send(JSON.stringify({ type: "offer", id: viewerId, offer }));
+        try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            console.log("broadcaster: created offer for", viewerId);
+            // send the offer and log
+            ws.send(JSON.stringify({ type: "offer", id: viewerId, offer }));
+            console.log("broadcaster: sent offer to server for viewer", viewerId);
+        } catch (err) {
+            console.error("broadcaster: error creating/sending offer:", err);
+        }
     }
 
     function stopCapture() {
