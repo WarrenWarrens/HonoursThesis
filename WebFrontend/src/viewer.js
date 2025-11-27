@@ -52,13 +52,17 @@ function startViewer(code) {
             videoEl.style.display = "none";
             return;
         }
-
+        // inside ws.onmessage
         if (msg.type === "offer") {
-            // STUN-only for LAN testing (simple and reliable on same wifi)
+            // STUN-only for LAN testing
             const ICE_CONFIG = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
-            // Important: assign to outer-scoped pc variable
+            // IMPORTANT: assign to outer scoped variable (do NOT use "const pc")
             pc = new RTCPeerConnection(ICE_CONFIG);
+
+            // logging
+            pc.oniceconnectionstatechange = () => console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
+            pc.onconnectionstatechange = () => console.log("viewer pc.connectionState:", pc.connectionState);
 
             pc.ontrack = (event) => {
                 console.log("viewer: got track, streams:", event.streams);
@@ -72,21 +76,20 @@ function startViewer(code) {
                 }
             };
 
-            pc.oniceconnectionstatechange = () => console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
-            pc.onconnectionstatechange = () => console.log("viewer pc.connectionState:", pc.connectionState);
-
             try {
+                console.log("viewer: setting remote description (offer)...");
                 await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 ws.send(JSON.stringify({ type: "answer", answer }));
-                console.log("viewer: answered offer");
+                console.log("viewer: sent answer");
             } catch (err) {
-                console.error("viewer: error handling offer:", err);
+                console.error("viewer: error while handling offer:", err);
             }
-        } else if (msg.type === "candidate") {
+        }
+         else if (msg.type === "candidate") {
             if (!pc) {
-                console.warn("viewer: received candidate but pc is not ready yet");
+                console.warn("viewer: received candidate but pc not ready yet");
             } else {
                 console.log("viewer: adding remote candidate", msg.candidate);
                 try {
@@ -95,10 +98,8 @@ function startViewer(code) {
                     console.error("viewer: addIceCandidate failed:", err);
                 }
             }
-        } else if (msg.type === "broadcaster-disconnected") {
-            alert("Broadcaster ended the stream.");
-            videoEl.srcObject = null;
         }
+
     };
 
     ws.onerror = (e) => console.error("Viewer WS error:", e);
