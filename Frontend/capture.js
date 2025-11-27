@@ -4,6 +4,28 @@ const videoEl = document.getElementById("preview");
 let stream, ws;
 const pcs = new Map();
 
+const overlay = document.getElementById("overlay-container");
+const overlayHeader = document.getElementById("overlay-header");
+let offsetX = 0, offsetY = 0, isDragging = false;
+
+overlayHeader.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offsetX = e.clientX - overlay.offsetLeft;
+    offsetY = e.clientY - overlay.offsetTop;
+    overlay.style.cursor = "grabbing";
+});
+
+document.addEventListener("mouseup", () => {
+    isDragging = false;
+    overlay.style.cursor = "grab";
+});
+
+document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    overlay.style.left = (e.clientX - offsetX) + "px";
+    overlay.style.top = (e.clientY - offsetY) + "px";
+});
+
 startBtn.addEventListener("click", async () => {
     try {
         stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
@@ -37,8 +59,8 @@ startBtn.addEventListener("click", async () => {
                     pcs.delete(msg.id);
                 }
             } else if (msg.type === "viewer_notify") {
-                console.log("📩 Viewer notification:", msg.message);
-                showNotificationPopup(msg.message);
+                console.log("Viewer notification:", msg.message);
+                showMessageOverlay(msg.message);
             }
         });
 
@@ -98,11 +120,32 @@ function stopCapture() {
 
 stopBtn.addEventListener("click", stopCapture);
 
-// ✅fixed: popup function
 function showNotificationPopup(message) {
     const popup = document.getElementById("notify-popup");
     if (!popup) return;
     popup.textContent = message || "Viewer sent a notification!";
     popup.style.display = "block";
     setTimeout(() => (popup.style.display = "none"), 3000);
+}
+
+let hideTimeout;
+
+function showMessageOverlay(text) {
+    const box = document.getElementById("overlay-container");
+    const content = document.getElementById("overlay-content");
+
+    content.textContent = text;
+
+    box.style.display = "block";
+
+    // Expand to fit content
+    box.style.width = "auto";
+    box.style.height = "auto";
+
+    // Reset hide timer
+    if (hideTimeout) clearTimeout(hideTimeout);
+
+    hideTimeout = setTimeout(() => {
+        box.style.display = "none";
+    }, 5000);
 }

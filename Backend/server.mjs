@@ -30,7 +30,6 @@ wss.on('connection', (socket) => {
         if (msg.type === 'viewerMessage') {
             console.log(`Viewer in ${msg.code} sent message: ${msg.message}`);
 
-            // Find the broadcaster for this code
             const broadcaster = broadcasters[msg.code];
             if (broadcaster) {
                 broadcaster.send(JSON.stringify({
@@ -40,8 +39,18 @@ wss.on('connection', (socket) => {
             }
         }
 
-        // Existing logic like join/offer/answer candidates etc.
     });
+
+    if (msg.type === "viewerMessage") {
+        const host = rooms.get(code)?.host;
+        if (host) {
+            host.send(JSON.stringify({
+                type: "viewerMessage",
+                message: msg.message
+            }));
+        }
+    }
+
 });
 
 wss.on("connection", (ws, req) => {
@@ -105,7 +114,7 @@ wss.on("connection", (ws, req) => {
     ws.on("message", (message) => {
         const msg = JSON.parse(message);
 
-        // 🧭 Case 1: Broadcaster → Viewer
+        //Broadcaster to Viewer
         if (role === "broadcaster" && msg.id && msg.type !== "room-code") {
             const room = broadcasters.get(ws.roomCode);
             const target = room?.viewers.get(msg.id);
@@ -114,7 +123,7 @@ wss.on("connection", (ws, req) => {
             }
         }
 
-        // 🧭 Case 2: Viewer → Streamer (viewer pressed "Notify")
+        //Viewer to Streamer
         else if (role === "viewer" && msg.type === "viewer_notify") {
             const roomEntry = Array.from(broadcasters.entries()).find(([code, { viewers }]) =>
                 viewers.has(ws)
