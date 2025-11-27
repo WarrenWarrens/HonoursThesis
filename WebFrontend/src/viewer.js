@@ -73,7 +73,7 @@ function startViewer(code) {
 
             };
 
-            const pc = new RTCPeerConnection(ICE_SERVERS);
+            pc = new RTCPeerConnection(ICE_SERVERS);
 
             pc.ontrack = (event) => {
                 videoEl.srcObject = event.streams[0];
@@ -90,9 +90,12 @@ function startViewer(code) {
             await pc.setLocalDescription(answer);
 
             ws.send(JSON.stringify({ type: "answer", answer }));
-        } else if (msg.type === "candidate" && pc) {
+
+        }
+        else if (msg.type === "candidate" && pc) {
             await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-        } else if (msg.type === "broadcaster-disconnected") {
+        }
+        else if (msg.type === "broadcaster-disconnected") {
             alert("Broadcaster ended the stream.");
             videoEl.srcObject =null;
         }
