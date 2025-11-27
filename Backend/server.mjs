@@ -61,6 +61,7 @@ wss.on("connection", (ws, req) => {
     // -----------------------------------
     // VIEWER CONNECTS
     // -----------------------------------
+
     if (role === "viewer" && code) {
         const room = broadcasters.get(code.toUpperCase());
         if (!room) {
@@ -71,41 +72,43 @@ wss.on("connection", (ws, req) => {
 
         const id = randomUUID();
         room.viewers.set(id, ws);
+        console.log(`Viewer joined room ${code} (${id}) -- stored in room.viewers`);
 
-        console.log(`Viewer joined room ${code} (${id})`);
+        // for debug: log number of viewers
+        console.log(`Room ${code} viewer count: ${room.viewers.size}`);
 
         room.ws.send(JSON.stringify({ type: "viewer-joined", id }));
 
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
+            console.log(`server: received message from viewer ${id} in ${code}:`, msg.type, msg);
 
             // NEW FEATURE: viewer sends message to streamer overlay
-            if (msg.type === "viewerMessage") {
+            if (msg.type === "viewerMessage" || msg.type === "viewer_notify") {
                 console.log(`Viewer in ${code} sent: ${msg.message}`);
 
-                room.ws.send(JSON.stringify({
-                    type: "viewerMessage",
-                    id,
-                    message: msg.message
-                }));
-
+                if (room.ws && room.ws.readyState === 1) {
+                    room.ws.send(JSON.stringify({
+                        type: "viewerMessage",
+                        id,
+                        message: msg.message
+                    }));
+                    console.log(`server: forwarded viewerMessage to broadcaster for room ${code}`);
+                } else {
+                    console.warn(`server: broadcaster for room ${code} not connected`);
+                }
                 return;
             }
 
             // normal viewer → broadcaster relay
-            room.ws.send(JSON.stringify({ ...msg, id }));
-        });
-
-        ws.on("close", () => {
-            console.log(`Viewer left room ${code} (${id})`);
-            room.viewers.delete(id);
-
-            if (room.ws.readyState === 1) {
-                room.ws.send(JSON.stringify({ type: "viewer-left", id }));
+            if (room.ws && room.ws.readyState === 1) {
+                room.ws.send(JSON.stringify({ ...msg, id }));
+                console.log(`server: relayed viewer ${id} -> broadcaster: ${msg.type}`);
+            } else {
+                console.warn(`server: cannot relay viewer ${id} -> broadcaster: broadcaster not ready`);
             }
         });
 
-        return;
     }
 
     // -----------------------------------
@@ -113,6 +116,8 @@ wss.on("connection", (ws, req) => {
     // -----------------------------------
     ws.on("message", (message) => {
         const msg = JSON.parse(message);
+        // debug log every message received from broadcaster
+        console.log("server: received message from broadcaster:", msg.type, msg);
 
         if (role === "broadcaster" && msg.id && msg.type !== "room-code") {
             const room = broadcasters.get(ws.roomCode);
@@ -120,6 +125,9 @@ wss.on("connection", (ws, req) => {
 
             if (target && target.readyState === 1) {
                 target.send(JSON.stringify(msg));
+                console.log(`server: forwarded ${msg.type} to viewer ${msg.id} in room ${ws.roomCode}`);
+            } else {
+                console.warn(`server: target viewer ${msg.id} not found/ready in room ${ws.roomCode}`);
             }
         }
     });
