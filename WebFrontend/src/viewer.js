@@ -64,10 +64,30 @@ function startViewer(code) {
             pc.oniceconnectionstatechange = () => console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
             pc.onconnectionstatechange = () => console.log("viewer pc.connectionState:", pc.connectionState);
 
+            const videoEl = document.getElementById("remoteVideo");
+            let remoteStream = new MediaStream();
+
             pc.ontrack = (event) => {
-                console.log("viewer: got track, streams:", event.streams);
-                videoEl.srcObject = event.streams[0];
+                console.log("viewer: got track", event.track.kind);
+
+                remoteStream.addTrack(event.track);
+                videoEl.srcObject = remoteStream;
+
+                // Required for autoplay to actually work
+                videoEl.muted = true;
+                videoEl.play().catch(err => {
+                    console.warn("viewer: autoplay blocked", err);
+                });
             };
+
+            pc.onconnectionstatechange = () => {
+                console.log("viewer pc.connectionState:", pc.connectionState);
+            };
+
+            pc.oniceconnectionstatechange = () => {
+                console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
+            };
+
 
             pc.onicecandidate = (event) => {
                 if (event.candidate) {

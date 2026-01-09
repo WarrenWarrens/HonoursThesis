@@ -9,6 +9,7 @@
     "storage",
     "notifications",
     "*://honoursthesisstreambackend.onrender.com/*",
+    "<all_urls>",
     "*://*.vercel.app/*"
   ],
   "browser_action": {

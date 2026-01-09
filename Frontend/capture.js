@@ -37,8 +37,10 @@ document.addEventListener("DOMContentLoaded", () => {
             videoEl.srcObject = stream;
             startBtn.disabled = true;
             stopBtn.disabled = false;
+            ws = new WebSocket(
+                "wss://honoursthesisstreambackend.onrender.com?role=broadcaster"
+            );
 
-            ws = new WebSocket("wss://honoursthesisstreambackend.onrender.com?role=broadcaster");
 
             ws.addEventListener("open", () => {
                 console.log("Broadcaster connected (WS open)");
