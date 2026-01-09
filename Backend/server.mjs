@@ -54,9 +54,8 @@ wss.on("connection", (ws, req) => {
                 broadcasters.delete(roomCode);
             }
         });
-
-        return;
     }
+
 
     // -----------------------------------
     // VIEWER CONNECTS
