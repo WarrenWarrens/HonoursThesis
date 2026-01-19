@@ -15,7 +15,6 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const broadcasters = new Map();
-// Map<roomCode, { ws, viewers: Map<viewerId, ws> }>
 
 function generateRoomCode() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -29,9 +28,6 @@ wss.on("connection", (ws, req) => {
     const role = url.searchParams.get("role");
     const code = url.searchParams.get("code");
 
-    // -----------------------------------
-    // BROADCASTER CONNECTS
-    // -----------------------------------
     if (role === "broadcaster") {
         const roomCode = generateRoomCode();
         broadcasters.set(roomCode, { ws, viewers: new Map() });
@@ -57,9 +53,7 @@ wss.on("connection", (ws, req) => {
     }
 
 
-    // -----------------------------------
-    // VIEWER CONNECTS
-    // -----------------------------------
+
 
     if (role === "viewer" && code) {
         const room = broadcasters.get(code.toUpperCase());
@@ -73,7 +67,6 @@ wss.on("connection", (ws, req) => {
         room.viewers.set(id, ws);
         console.log(`Viewer joined room ${code} (${id}) -- stored in room.viewers`);
 
-        // for debug: log number of viewers
         console.log(`Room ${code} viewer count: ${room.viewers.size}`);
 
         room.ws.send(JSON.stringify({ type: "viewer-joined", id }));
@@ -82,7 +75,6 @@ wss.on("connection", (ws, req) => {
             const msg = JSON.parse(message);
             console.log(`server: received message from viewer ${id} in ${code}:`, msg.type, msg);
 
-            // NEW FEATURE: viewer sends message to streamer overlay
             if (msg.type === "viewerMessage" || msg.type === "viewer_notify") {
                 console.log(`Viewer in ${code} sent: ${msg.message}`);
 
@@ -99,7 +91,6 @@ wss.on("connection", (ws, req) => {
                 return;
             }
 
-            // normal viewer → broadcaster relay
             if (room.ws && room.ws.readyState === 1) {
                 room.ws.send(JSON.stringify({ ...msg, id }));
                 console.log(`server: relayed viewer ${id} -> broadcaster: ${msg.type}`);
@@ -110,12 +101,9 @@ wss.on("connection", (ws, req) => {
 
     }
 
-    // -----------------------------------
-    // BROADCASTER → VIEWER
-    // -----------------------------------
+
     ws.on("message", (message) => {
         const msg = JSON.parse(message);
-        // debug log every message received from broadcaster
         console.log("server: received message from broadcaster:", msg.type, msg);
 
         if (role === "broadcaster" && msg.id && msg.type !== "room-code") {
@@ -132,7 +120,6 @@ wss.on("connection", (ws, req) => {
     });
 });
 
-// Viewer assets
 app.use(express.static(path.join(__dirname, "Viewer")));
 
 server.listen(8080, () => {

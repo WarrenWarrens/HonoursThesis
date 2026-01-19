@@ -37,6 +37,7 @@
 	</style>
 </head>
 <body>
+
 <div id="joinForm">
 	<h2>Enter Stream Code</h2>
 	<input id="codeInput" maxlength="4" placeholder="ABCD" />
@@ -44,9 +45,12 @@
 	<p id="error" style="color: red;"></p>
 </div>
 
-<video id="remoteVideo" autoplay playsinline></video>
-<button id="notifyBtn">Notify Streamer</button>
 
-<script type ="module" src="src/viewer.js"></script>
+<div id="streamContainer">
+	<video id="remoteVideo" autoplay playsinline></video>
+	<button id="notifyBtn">Notify Streamer</button>
+</div>
+
+<script type="module" src="src/viewer.js"></script>
 </body>
 </html>

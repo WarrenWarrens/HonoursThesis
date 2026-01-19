@@ -6,6 +6,8 @@ const errorEl = document.getElementById("error");
 const videoEl = document.getElementById("remoteVideo");
 const notifyBtn = document.getElementById("notifyBtn");
 let ws, pc;
+const streamContainer = document.getElementById("streamContainer");
+
 
 joinBtn.onclick = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -18,7 +20,9 @@ joinBtn.onclick = () => {
 
 function startViewer(code) {
     joinForm.style.display = "none";
-    videoEl.style.display = "block";
+    streamContainer.style.display = "flex";
+
+
 
     // Use your Render backend (secure). For pure LAN testing replace with ws://<backend-lan-ip>:8080
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
@@ -49,18 +53,15 @@ function startViewer(code) {
         if (msg.type === "error") {
             errorEl.textContent = msg.message;
             joinForm.style.display = "flex";
-            videoEl.style.display = "none";
+            streamContainer.style.display = "none";
+
             return;
         }
-        // inside ws.onmessage
         if (msg.type === "offer") {
-            // STUN-only for LAN testing
             const ICE_CONFIG = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
-            // IMPORTANT: assign to outer scoped variable (do NOT use "const pc")
             pc = new RTCPeerConnection(ICE_CONFIG);
 
-            // logging
             pc.oniceconnectionstatechange = () => console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
             pc.onconnectionstatechange = () => console.log("viewer pc.connectionState:", pc.connectionState);
 
@@ -73,7 +74,6 @@ function startViewer(code) {
                 remoteStream.addTrack(event.track);
                 videoEl.srcObject = remoteStream;
 
-                // Required for autoplay to actually work
                 videoEl.muted = true;
                 videoEl.play().catch(err => {
                     console.warn("viewer: autoplay blocked", err);

@@ -1,4 +1,3 @@
-// capture.js (replace whole file)
 document.addEventListener("DOMContentLoaded", () => {
     const startBtn = document.getElementById("start");
     const stopBtn = document.getElementById("stop");
@@ -6,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let stream, ws;
     const pcs = new Map();
 
-    // overlay drag setup (safe: elements exist now)
     const overlay = document.getElementById("overlay-container");
     const overlayHeader = document.getElementById("overlay-header");
     let offsetX = 0, offsetY = 0, isDragging = false;
@@ -75,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         pcs.delete(msg.id);
                     }
                 } else if (msg.type === "viewerMessage") {
-                    // show overlay (message)
                     console.log("Viewer message received:", msg.message);
                     showMessageOverlay(msg.message);
                 }
@@ -89,7 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     async function createOffer(viewerId) {
-        // STUN-only for local network testing
         const ICE_CONFIG = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
         const pc = new RTCPeerConnection(ICE_CONFIG);
@@ -105,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
         pc.oniceconnectionstatechange = () => console.log(`broadcaster pc[${viewerId}] iceConnectionState:`, pc.iceConnectionState);
         pc.onconnectionstatechange = () => console.log(`broadcaster pc[${viewerId}] connectionState:`, pc.connectionState);
 
-        // send tracks from screen capture
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
         try {
