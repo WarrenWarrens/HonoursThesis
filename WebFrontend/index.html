@@ -10,23 +10,18 @@
 			align-items: center;
 			justify-content: center;
 			background: #f0f0f0;
-			height: 100vh;
+			min-height: 100vh;
 			margin: 0;
 			font-family: sans-serif;
 		}
-		video {
-			width: 90%;
-			max-width: 900px;
-			background: black;
-			border-radius: 8px;
-			display: none;
-		}
+
 		#joinForm {
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			gap: 10px;
 		}
+
 		input {
 			font-size: 1.5rem;
 			text-align: center;
@@ -34,19 +29,123 @@
 			padding: 5px 10px;
 			width: 120px;
 		}
+
+		#joinForm button {
+			padding: 10px 20px;
+			font-size: 1rem;
+			background: #0078ff;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		#joinForm button:hover {
+			background: #0056cc;
+		}
+
+		#error {
+			color: red;
+			margin: 0;
+		}
+
+		#streamContainer {
+			display: none;
+			width: 90%;
+			max-width: 1200px;
+			margin: 20px auto;
+		}
+
+		#streamContent {
+			display: flex;
+			gap: 20px;
+			align-items: flex-start;
+		}
+
+		#videoWrapper {
+			flex: 1;
+			min-width: 0;
+		}
+
+		video {
+			width: 100%;
+			background: black;
+			border-radius: 8px;
+			display: block;
+		}
+
+		#buttonPanel {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			min-width: 150px;
+		}
+
+		#buttonPanel button {
+			padding: 12px 20px;
+			font-size: 0.95rem;
+			background: #4CAF50;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			transition: background 0.3s;
+		}
+
+		#buttonPanel button:hover {
+			background: #45a049;
+		}
+
+		#notifyBtn {
+			background: #ff6b6b;
+		}
+
+		#notifyBtn:hover {
+			background: #ee5a52;
+		}
+
+		/* Responsive design for smaller screens */
+		@media (max-width: 768px) {
+			#streamContent {
+				flex-direction: column;
+			}
+
+			#buttonPanel {
+				flex-direction: row;
+				min-width: 100%;
+				flex-wrap: wrap;
+			}
+
+			#buttonPanel button {
+				flex: 1;
+				min-width: 120px;
+			}
+		}
 	</style>
 </head>
 <body>
+
 <div id="joinForm">
 	<h2>Enter Stream Code</h2>
 	<input id="codeInput" maxlength="4" placeholder="ABCD" />
 	<button id="joinBtn">Join</button>
-	<p id="error" style="color: red;"></p>
+	<p id="error"></p>
 </div>
 
-<video id="remoteVideo" autoplay playsinline></video>
-<button id="notifyBtn">Notify Streamer</button>
+<div id="streamContainer">
+	<div id="streamContent">
+		<div id="videoWrapper">
+			<video id="remoteVideo" autoplay playsinline></video>
+		</div>
+		<div id="buttonPanel">
+			<button id="action1Btn">Action 1</button>
+			<button id="action2Btn">Action 2</button>
+			<button id="action3Btn">Action 3</button>
+			<button id="notifyBtn">Notify Streamer</button>
+		</div>
+	</div>
+</div>
 
-<script type ="module" src="src/viewer.js"></script>
+<script type="module" src="src/viewer.js"></script>
 </body>
 </html>

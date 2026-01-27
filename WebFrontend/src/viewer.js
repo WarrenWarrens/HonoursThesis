@@ -1,10 +1,11 @@
-// viewer.js (replace whole file)
+// viewer.js (modified for improved layout)
 const joinForm = document.getElementById("joinForm");
 const joinBtn = document.getElementById("joinBtn");
 const codeInput = document.getElementById("codeInput");
 const errorEl = document.getElementById("error");
 const videoEl = document.getElementById("remoteVideo");
 const notifyBtn = document.getElementById("notifyBtn");
+const streamContainer = document.getElementById("streamContainer");
 let ws, pc;
 
 joinBtn.onclick = () => {
@@ -16,9 +17,17 @@ joinBtn.onclick = () => {
     startViewer(code);
 };
 
+// Allow Enter key to join
+codeInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        joinBtn.click();
+    }
+});
+
 function startViewer(code) {
+    // Hide join form and show stream container
     joinForm.style.display = "none";
-    videoEl.style.display = "block";
+    streamContainer.style.display = "block";
 
     // Use your Render backend (secure). For pure LAN testing replace with ws://<backend-lan-ip>:8080
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
@@ -48,19 +57,16 @@ function startViewer(code) {
 
         if (msg.type === "error") {
             errorEl.textContent = msg.message;
+            // Show join form again on error
             joinForm.style.display = "flex";
-            videoEl.style.display = "none";
+            streamContainer.style.display = "none";
             return;
         }
-        // inside ws.onmessage
         if (msg.type === "offer") {
-            // STUN-only for LAN testing
             const ICE_CONFIG = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
-            // IMPORTANT: assign to outer scoped variable (do NOT use "const pc")
             pc = new RTCPeerConnection(ICE_CONFIG);
 
-            // logging
             pc.oniceconnectionstatechange = () => console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
             pc.onconnectionstatechange = () => console.log("viewer pc.connectionState:", pc.connectionState);
 
@@ -73,7 +79,6 @@ function startViewer(code) {
                 remoteStream.addTrack(event.track);
                 videoEl.srcObject = remoteStream;
 
-                // Required for autoplay to actually work
                 videoEl.muted = true;
                 videoEl.play().catch(err => {
                     console.warn("viewer: autoplay blocked", err);
@@ -87,7 +92,6 @@ function startViewer(code) {
             pc.oniceconnectionstatechange = () => {
                 console.log("viewer pc.iceConnectionState:", pc.iceConnectionState);
             };
-
 
             pc.onicecandidate = (event) => {
                 if (event.candidate) {
@@ -107,7 +111,7 @@ function startViewer(code) {
                 console.error("viewer: error while handling offer:", err);
             }
         }
-         else if (msg.type === "candidate") {
+        else if (msg.type === "candidate") {
             if (!pc) {
                 console.warn("viewer: received candidate but pc not ready yet");
             } else {
@@ -119,9 +123,11 @@ function startViewer(code) {
                 }
             }
         }
-
     };
 
     ws.onerror = (e) => console.error("Viewer WS error:", e);
-    ws.onclose = () => console.log("Viewer WS closed");
+    ws.onclose = () => {
+        console.log("Viewer WS closed");
+        // Optionally show join form again when connection closes
+    };
 }
