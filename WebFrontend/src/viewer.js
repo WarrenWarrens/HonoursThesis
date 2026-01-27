@@ -1,4 +1,4 @@
-// viewer.js (modified for improved layout)
+// viewer.js (modified with click-to-place functionality)
 const joinForm = document.getElementById("joinForm");
 const joinBtn = document.getElementById("joinBtn");
 const codeInput = document.getElementById("codeInput");
@@ -6,7 +6,103 @@ const errorEl = document.getElementById("error");
 const videoEl = document.getElementById("remoteVideo");
 const notifyBtn = document.getElementById("notifyBtn");
 const streamContainer = document.getElementById("streamContainer");
+const action1Btn = document.getElementById("action1Btn");
+const action2Btn = document.getElementById("action2Btn");
+const action3Btn = document.getElementById("action3Btn");
+
 let ws, pc;
+let currentCode = null;
+let selectedTool = null; // Track which button is selected
+
+// Button selection handlers
+const toolButtons = [action1Btn, action2Btn, action3Btn];
+
+function selectTool(button, toolName) {
+    // Deselect all buttons
+    toolButtons.forEach(btn => btn.classList.remove('selected'));
+
+    // Select the clicked button
+    if (selectedTool === toolName) {
+        // Clicking the same button deselects it
+        selectedTool = null;
+    } else {
+        button.classList.add('selected');
+        selectedTool = toolName;
+        console.log(`Tool selected: ${toolName}`);
+    }
+}
+
+action1Btn.addEventListener("click", () => selectTool(action1Btn, "tool1"));
+action2Btn.addEventListener("click", () => selectTool(action2Btn, "tool2"));
+action3Btn.addEventListener("click", () => selectTool(action3Btn, "tool3"));
+
+// Video click handler for placing notifications
+videoEl.addEventListener("click", (event) => {
+    if (!selectedTool) {
+        console.log("No tool selected. Please select a button first.");
+        return;
+    }
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.warn("WebSocket not connected");
+        return;
+    }
+
+    // Get the click coordinates relative to the video element
+    const rect = videoEl.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Calculate percentage position (so it scales with different screen sizes)
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+
+    console.log(`Video clicked at: ${x}, ${y} (${xPercent.toFixed(2)}%, ${yPercent.toFixed(2)}%)`);
+
+    // Send notification with position and tool type
+    const message = {
+        type: "viewerMessage",
+        code: currentCode,
+        message: `Tool ${selectedTool} placed at position`,
+        tool: selectedTool,
+        position: {
+            xPercent: xPercent.toFixed(2),
+            yPercent: yPercent.toFixed(2),
+            x: Math.round(x),
+            y: Math.round(y)
+        }
+    };
+
+    ws.send(JSON.stringify(message));
+    console.log("Sent position notification:", message);
+
+    // Visual feedback - create a temporary marker on the video
+    createTemporaryMarker(xPercent, yPercent, selectedTool);
+});
+
+// Create a temporary visual marker to show where the user clicked
+function createTemporaryMarker(xPercent, yPercent, tool) {
+    const marker = document.createElement('div');
+    marker.className = 'video-marker';
+    marker.style.left = `${xPercent}%`;
+    marker.style.top = `${yPercent}%`;
+
+    // Different colors for different tools
+    const colors = {
+        'tool1': '#4CAF50',
+        'tool2': '#2196F3',
+        'tool3': '#FF9800'
+    };
+    marker.style.borderColor = colors[tool] || '#fff';
+
+    const videoWrapper = document.getElementById('videoWrapper');
+    videoWrapper.appendChild(marker);
+
+    // Remove marker after animation
+    setTimeout(() => {
+        marker.remove();
+    }, 1500);
+}
 
 joinBtn.onclick = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -25,6 +121,8 @@ codeInput.addEventListener("keypress", (e) => {
 });
 
 function startViewer(code) {
+    currentCode = code;
+
     // Hide join form and show stream container
     joinForm.style.display = "none";
     streamContainer.style.display = "block";
@@ -39,11 +137,11 @@ function startViewer(code) {
 
     notifyBtn.addEventListener("click", () => {
         if (ws?.readyState === WebSocket.OPEN) {
-            console.log("Viewer pressed button!");
+            console.log("Viewer pressed notify button!");
             ws.send(JSON.stringify({
                 type: "viewerMessage",
                 code,
-                message: "Viewer pressed the button!"
+                message: "Viewer pressed the notify button!"
             }));
             alert("Notification sent to the streamer!");
         } else {

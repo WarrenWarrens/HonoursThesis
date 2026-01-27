@@ -1,4 +1,3 @@
-// capture.js (replace whole file)
 document.addEventListener("DOMContentLoaded", () => {
     const startBtn = document.getElementById("start");
     const stopBtn = document.getElementById("stop");
@@ -6,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let stream, ws;
     const pcs = new Map();
 
-    // overlay drag setup (safe: elements exist now)
     const overlay = document.getElementById("overlay-container");
     const overlayHeader = document.getElementById("overlay-header");
     let offsetX = 0, offsetY = 0, isDragging = false;
@@ -75,9 +73,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         pcs.delete(msg.id);
                     }
                 } else if (msg.type === "viewerMessage") {
-                    // show overlay (message)
-                    console.log("Viewer message received:", msg.message);
-                    showMessageOverlay(msg.message);
+                    console.log("Viewer message received:", msg);
+
+                    // Check if this is a positioned notification
+                    if (msg.position) {
+                        showPositionedNotification(msg.tool, msg.position, msg.message);
+                    } else {
+                        // Regular message notification
+                        showMessageOverlay(msg.message);
+                    }
                 }
             });
 
@@ -89,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     async function createOffer(viewerId) {
-        // STUN-only for local network testing
         const ICE_CONFIG = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
         const pc = new RTCPeerConnection(ICE_CONFIG);
@@ -105,7 +108,6 @@ document.addEventListener("DOMContentLoaded", () => {
         pc.oniceconnectionstatechange = () => console.log(`broadcaster pc[${viewerId}] iceConnectionState:`, pc.iceConnectionState);
         pc.onconnectionstatechange = () => console.log(`broadcaster pc[${viewerId}] connectionState:`, pc.connectionState);
 
-        // send tracks from screen capture
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
         try {
@@ -155,5 +157,54 @@ document.addEventListener("DOMContentLoaded", () => {
         hideTimeout = setTimeout(() => {
             box.style.display = "none";
         }, 5000);
+    }
+
+    // NEW FUNCTION: Show positioned notification on screen
+    function showPositionedNotification(tool, position, message) {
+        console.log(`Showing positioned notification: ${tool} at (${position.xPercent}%, ${position.yPercent}%)`);
+
+        // Create a notification marker on the screen
+        const marker = document.createElement('div');
+        marker.className = 'positioned-marker';
+        marker.style.left = `${position.xPercent}%`;
+        marker.style.top = `${position.yPercent}%`;
+
+        // Different colors for different tools
+        const colors = {
+            'tool1': '#4CAF50',
+            'tool2': '#2196F3',
+            'tool3': '#FF9800'
+        };
+
+        const toolNames = {
+            'tool1': 'Tool 1',
+            'tool2': 'Tool 2',
+            'tool3': 'Tool 3'
+        };
+
+        marker.style.borderColor = colors[tool] || '#fff';
+        marker.style.backgroundColor = colors[tool] || '#fff';
+
+        // Add label
+        const label = document.createElement('div');
+        label.className = 'marker-label';
+        label.textContent = toolNames[tool] || tool;
+        label.style.backgroundColor = colors[tool] || '#fff';
+        marker.appendChild(label);
+
+        // Add to body (full screen positioning)
+        document.body.appendChild(marker);
+
+        // Animate in
+        setTimeout(() => marker.classList.add('show'), 10);
+
+        // Remove after animation
+        setTimeout(() => {
+            marker.classList.remove('show');
+            setTimeout(() => marker.remove(), 500);
+        }, 3000);
+
+        // Also show a brief notification
+        showNotificationPopup(`${toolNames[tool]} placed at (${Math.round(position.xPercent)}%, ${Math.round(position.yPercent)}%)`);
     }
 });
