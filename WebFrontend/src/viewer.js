@@ -1,4 +1,4 @@
-// viewer.js (modified with click-to-place functionality)
+// viewer.js (modified with click-to-place functionality and debugging)
 const joinForm = document.getElementById("joinForm");
 const joinBtn = document.getElementById("joinBtn");
 const codeInput = document.getElementById("codeInput");
@@ -25,6 +25,7 @@ function selectTool(button, toolName) {
     if (selectedTool === toolName) {
         // Clicking the same button deselects it
         selectedTool = null;
+        console.log("Tool deselected");
     } else {
         button.classList.add('selected');
         selectedTool = toolName;
@@ -57,7 +58,12 @@ videoEl.addEventListener("click", (event) => {
     const xPercent = (x / rect.width) * 100;
     const yPercent = (y / rect.height) * 100;
 
-    console.log(`Video clicked at: ${x}, ${y} (${xPercent.toFixed(2)}%, ${yPercent.toFixed(2)}%)`);
+    console.log("========== VIEWER CLICK DEBUG ==========");
+    console.log(`Video dimensions: ${rect.width} x ${rect.height}`);
+    console.log(`Click position (pixels): ${x}, ${y}`);
+    console.log(`Click position (percent): ${xPercent.toFixed(2)}%, ${yPercent.toFixed(2)}%`);
+    console.log(`Selected tool: ${selectedTool}`);
+    console.log("=======================================");
 
     // Send notification with position and tool type
     const message = {
@@ -66,15 +72,15 @@ videoEl.addEventListener("click", (event) => {
         message: `Tool ${selectedTool} placed at position`,
         tool: selectedTool,
         position: {
-            xPercent: xPercent.toFixed(2),
-            yPercent: yPercent.toFixed(2),
+            xPercent: parseFloat(xPercent.toFixed(2)),
+            yPercent: parseFloat(yPercent.toFixed(2)),
             x: Math.round(x),
             y: Math.round(y)
         }
     };
 
+    console.log("Sending message to broadcaster:", JSON.stringify(message, null, 2));
     ws.send(JSON.stringify(message));
-    console.log("Sent position notification:", message);
 
     // Visual feedback - create a temporary marker on the video
     createTemporaryMarker(xPercent, yPercent, selectedTool);
@@ -86,6 +92,8 @@ function createTemporaryMarker(xPercent, yPercent, tool) {
     marker.className = 'video-marker';
     marker.style.left = `${xPercent}%`;
     marker.style.top = `${yPercent}%`;
+
+    console.log(`Creating temp marker at: ${xPercent}%, ${yPercent}%`);
 
     // Different colors for different tools
     const colors = {

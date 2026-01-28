@@ -159,15 +159,26 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     }
 
-    // NEW FUNCTION: Show positioned notification on screen
+    // UPDATED FUNCTION: Show positioned notification on screen with debugging
     function showPositionedNotification(tool, position, message) {
-        console.log(`Showing positioned notification: ${tool} at (${position.xPercent}%, ${position.yPercent}%)`);
+        console.log("========== POSITION DEBUG ==========");
+        console.log(`Tool: ${tool}`);
+        console.log(`Position object:`, position);
+        console.log(`X Percent: ${position.xPercent}%`);
+        console.log(`Y Percent: ${position.yPercent}%`);
+        console.log(`X Pixels: ${position.x}px`);
+        console.log(`Y Pixels: ${position.y}px`);
+        console.log("====================================");
 
         // Create a notification marker on the screen
         const marker = document.createElement('div');
         marker.className = 'positioned-marker';
-        marker.style.left = `${position.xPercent}%`;
-        marker.style.top = `${position.yPercent}%`;
+
+        // IMPORTANT: Set position immediately when creating element
+        marker.style.left = position.xPercent + '%';
+        marker.style.top = position.yPercent + '%';
+
+        console.log(`Setting marker position to: left=${position.xPercent}%, top=${position.yPercent}%`);
 
         // Different colors for different tools
         const colors = {
@@ -182,29 +193,46 @@ document.addEventListener("DOMContentLoaded", () => {
             'tool3': 'Tool 3'
         };
 
-        marker.style.borderColor = colors[tool] || '#fff';
-        marker.style.backgroundColor = colors[tool] || '#fff';
+        const color = colors[tool] || '#FF0000'; // Default to red if tool not found
+        console.log(`Using color: ${color} for tool: ${tool}`);
 
-        // Add label
+        marker.style.borderColor = color;
+        marker.style.backgroundColor = color;
+        marker.style.color = color; // For the ::before pseudo-element
+
+        // Add label with coordinates for debugging
         const label = document.createElement('div');
         label.className = 'marker-label';
-        label.textContent = toolNames[tool] || tool;
-        label.style.backgroundColor = colors[tool] || '#fff';
+        label.innerHTML = `${toolNames[tool] || tool}<br><small>(${position.xPercent}%, ${position.yPercent}%)</small>`;
+        label.style.backgroundColor = color;
         marker.appendChild(label);
 
         // Add to body (full screen positioning)
         document.body.appendChild(marker);
+        console.log("Marker added to body");
+
+        // Log computed style to verify
+        const computedStyle = window.getComputedStyle(marker);
+        console.log(`Computed position: left=${computedStyle.left}, top=${computedStyle.top}`);
+        console.log(`Marker dimensions: ${computedStyle.width} x ${computedStyle.height}`);
 
         // Animate in
-        setTimeout(() => marker.classList.add('show'), 10);
+        setTimeout(() => {
+            marker.classList.add('show');
+            console.log("Marker 'show' class added");
+        }, 10);
 
         // Remove after animation
         setTimeout(() => {
             marker.classList.remove('show');
-            setTimeout(() => marker.remove(), 500);
-        }, 3000);
+            console.log("Marker fading out");
+            setTimeout(() => {
+                marker.remove();
+                console.log("Marker removed");
+            }, 500);
+        }, 5000); // Changed to 5 seconds for easier debugging
 
-        // Also show a brief notification
-        showNotificationPopup(`${toolNames[tool]} placed at (${Math.round(position.xPercent)}%, ${Math.round(position.yPercent)}%)`);
+        // Also show a brief notification with debugging info
+        showNotificationPopup(`${toolNames[tool]} at (${position.xPercent}%, ${position.yPercent}%)`);
     }
 });
