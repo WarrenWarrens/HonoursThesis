@@ -13,6 +13,7 @@
       justify-content: center;
       height: 100vh;
       margin: 0;
+      position: relative;
     }
 
     video {
@@ -59,6 +60,103 @@
       white-space: normal;
       word-wrap: break-word;
     }
+
+    #notify-popup {
+      display: none;
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: #333;
+      color: rgba(255,246,246,0.79);
+      padding: 15px;
+      border-radius: 8px;
+      z-index: 10000;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Styles for positioned notification markers - FIXED VERSION */
+    .positioned-marker {
+      position: fixed;
+      width: 40px;
+      height: 40px;
+      border: 5px solid;
+      border-radius: 50%;
+      /* Important: Don't use transform on initial state, set it when showing */
+      transform: translate(-50%, -50%) scale(0);
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0;
+      transition: all 0.5s ease-out;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .positioned-marker.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    /* Center dot that pulses */
+    .positioned-marker::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 12px;
+      background: currentColor;
+      border-radius: 50%;
+      animation: pulse 1.5s ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 1;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.7;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 1;
+      }
+    }
+
+    .marker-label {
+      position: absolute;
+      top: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 13px;
+      white-space: nowrap;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .marker-label small {
+      font-size: 10px;
+      opacity: 0.9;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .marker-label::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: inherit;
+    }
   </style>
 </head>
 <body>
@@ -66,15 +164,15 @@
 <video id="preview" autoplay playsinline muted></video><br>
 <button id="start">Start Capture</button>
 <button id="stop" disabled>Stop Capture</button>
-<div id="notify-popup" style="display:none;position:fixed;bottom:10px;right:10px;background:#333;color:rgba(255,246,246,0.79);padding:10px;border-radius:8px;">
+
+<div id="notify-popup">
   Viewer sent a notification!
 </div>
 
 <div id="overlay-container">
-  <div id="overlay-header"> Messages (drag me)</div>
+  <div id="overlay-header">Messages (drag me)</div>
   <div id="overlay-content"></div>
 </div>
-
 
 <script src="capture.js"></script>
 </body>

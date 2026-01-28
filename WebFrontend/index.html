@@ -10,29 +10,227 @@
 			align-items: center;
 			justify-content: center;
 			background: #f0f0f0;
-			height: 100vh;
+			min-height: 100vh;
 			margin: 0;
 			font-family: sans-serif;
 		}
-		video {
-			width: 90%;
-			max-width: 900px;
-			background: black;
-			border-radius: 8px;
-			display: none;
-		}
+
 		#joinForm {
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			gap: 10px;
 		}
+
 		input {
 			font-size: 1.5rem;
 			text-align: center;
 			letter-spacing: 0.3rem;
 			padding: 5px 10px;
 			width: 120px;
+		}
+
+		#joinForm button {
+			padding: 10px 20px;
+			font-size: 1rem;
+			background: #0078ff;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		#joinForm button:hover {
+			background: #0056cc;
+		}
+
+		#error {
+			color: red;
+			margin: 0;
+		}
+
+		#streamContainer {
+			display: none;
+			width: 90%;
+			max-width: 1200px;
+			margin: 20px auto;
+		}
+
+		#streamContent {
+			display: flex;
+			gap: 20px;
+			align-items: flex-start;
+		}
+
+		#videoWrapper {
+			flex: 1;
+			min-width: 0;
+			position: relative;
+			background: #000;
+			border-radius: 8px;
+			overflow: hidden;
+		}
+
+		video {
+			width: 100%;
+			background: black;
+			border-radius: 8px;
+			display: block;
+			cursor: crosshair; /* Show crosshair when tool is selected */
+		}
+
+		/* Visual marker that appears when clicking on video */
+		.video-marker {
+			position: absolute;
+			width: 20px;
+			height: 20px;
+			border: 3px solid #fff;
+			border-radius: 50%;
+			transform: translate(-50%, -50%);
+			pointer-events: none;
+			animation: markerPulse 1.5s ease-out;
+			z-index: 10;
+		}
+
+		@keyframes markerPulse {
+			0% {
+				transform: translate(-50%, -50%) scale(0.5);
+				opacity: 1;
+			}
+			50% {
+				transform: translate(-50%, -50%) scale(1.2);
+				opacity: 0.8;
+			}
+			100% {
+				transform: translate(-50%, -50%) scale(1.5);
+				opacity: 0;
+			}
+		}
+
+		#buttonPanel {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			min-width: 150px;
+		}
+
+		#buttonPanel button {
+			padding: 12px 20px;
+			font-size: 0.95rem;
+			background: #4CAF50;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			transition: all 0.3s;
+			position: relative;
+			overflow: hidden;
+		}
+
+		#buttonPanel button:hover {
+			background: #45a049;
+			transform: translateY(-2px);
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		}
+
+		#buttonPanel button:active {
+			transform: translateY(0);
+		}
+
+		/* Selected state for tool buttons */
+		#buttonPanel button.selected {
+			background: #2c7a2f !important;
+			box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(76, 175, 80, 0.5);
+			transform: scale(1.05);
+		}
+
+		#buttonPanel button.selected::before {
+			content: "✓ ";
+			font-weight: bold;
+		}
+
+		/* Individual button colors */
+		#action1Btn {
+			background: #4CAF50;
+		}
+
+		#action1Btn:hover {
+			background: #45a049;
+		}
+
+		#action1Btn.selected {
+			background: #2c7a2f !important;
+			box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(76, 175, 80, 0.5);
+		}
+
+		#action2Btn {
+			background: #2196F3;
+		}
+
+		#action2Btn:hover {
+			background: #0b7dda;
+		}
+
+		#action2Btn.selected {
+			background: #0d5ba8 !important;
+			box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(33, 150, 243, 0.5);
+		}
+
+		#action3Btn {
+			background: #FF9800;
+		}
+
+		#action3Btn:hover {
+			background: #e68900;
+		}
+
+		#action3Btn.selected {
+			background: #cc7700 !important;
+			box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 152, 0, 0.5);
+		}
+
+		#notifyBtn {
+			background: #ff6b6b;
+		}
+
+		#notifyBtn:hover {
+			background: #ee5a52;
+		}
+
+		/* Instruction text */
+		.instruction-text {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			background: rgba(0, 0, 0, 0.7);
+			color: white;
+			padding: 8px 12px;
+			border-radius: 5px;
+			font-size: 0.9rem;
+			z-index: 5;
+			display: none;
+		}
+
+		.instruction-text.show {
+			display: block;
+		}
+
+		/* Responsive design for smaller screens */
+		@media (max-width: 768px) {
+			#streamContent {
+				flex-direction: column;
+			}
+
+			#buttonPanel {
+				flex-direction: row;
+				min-width: 100%;
+				flex-wrap: wrap;
+			}
+
+			#buttonPanel button {
+				flex: 1;
+				min-width: calc(50% - 6px);
+			}
 		}
 	</style>
 </head>
@@ -42,7 +240,7 @@
 	<h2>Enter Stream Code</h2>
 	<input id="codeInput" maxlength="4" placeholder="ABCD" />
 	<button id="joinBtn">Join</button>
-	<p id="error" style="color: red;"></p>
+	<p id="error"></p>
 </div>
 
 

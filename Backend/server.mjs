@@ -1,4 +1,4 @@
-// server.mjs
+// server.mjs - FIXED VERSION
 import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
@@ -50,8 +50,11 @@ wss.on("connection", (ws, req) => {
                 broadcasters.delete(roomCode);
             }
         });
-    }
 
+        // IMPORTANT: Handle messages from broadcaster to viewers
+        ws.on("message", (message) => {
+            const msg = JSON.parse(message);
+            console.log("server: received message from broadcaster:", msg.type, msg);
 
 
 
@@ -73,18 +76,21 @@ wss.on("connection", (ws, req) => {
 
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
-            console.log(`server: received message from viewer ${id} in ${code}:`, msg.type, msg);
+            console.log(`server: received message from viewer ${id} in ${code}:`, msg.type);
+            console.log(`server: full message data:`, JSON.stringify(msg, null, 2));
 
             if (msg.type === "viewerMessage" || msg.type === "viewer_notify") {
-                console.log(`Viewer in ${code} sent: ${msg.message}`);
+                console.log(`server: forwarding viewer message to broadcaster for room ${code}`);
 
                 if (room.ws && room.ws.readyState === 1) {
-                    room.ws.send(JSON.stringify({
-                        type: "viewerMessage",
-                        id,
-                        message: msg.message
-                    }));
-                    console.log(`server: forwarded viewerMessage to broadcaster for room ${code}`);
+                    // Add the viewer ID to the message and forward EVERYTHING
+                    const messageToSend = {
+                        ...msg,  // Spread all properties from original message
+                        id       // Add viewer ID
+                    };
+
+                    console.log(`server: sending to broadcaster:`, JSON.stringify(messageToSend, null, 2));
+                    room.ws.send(JSON.stringify(messageToSend));
                 } else {
                     console.warn(`server: broadcaster for room ${code} not connected`);
                 }
@@ -116,12 +122,13 @@ wss.on("connection", (ws, req) => {
             } else {
                 console.warn(`server: target viewer ${msg.id} not found/ready in room ${ws.roomCode}`);
             }
-        }
-    });
+        });
+    }
 });
 
 app.use(express.static(path.join(__dirname, "Viewer")));
 
-server.listen(8080, () => {
-    console.log("Server running → http://localhost:8080");
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+    console.log(`Server running → http://localhost:${PORT}`);
 });
