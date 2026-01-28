@@ -11,106 +11,8 @@ const action2Btn = document.getElementById("action2Btn");
 const action3Btn = document.getElementById("action3Btn");
 
 let ws, pc;
-let currentCode = null;
-let selectedTool = null; // Track which button is selected
+const streamContainer = document.getElementById("streamContainer");
 
-// Button selection handlers
-const toolButtons = [action1Btn, action2Btn, action3Btn];
-
-function selectTool(button, toolName) {
-    // Deselect all buttons
-    toolButtons.forEach(btn => btn.classList.remove('selected'));
-
-    // Select the clicked button
-    if (selectedTool === toolName) {
-        // Clicking the same button deselects it
-        selectedTool = null;
-        console.log("Tool deselected");
-    } else {
-        button.classList.add('selected');
-        selectedTool = toolName;
-        console.log(`Tool selected: ${toolName}`);
-    }
-}
-
-action1Btn.addEventListener("click", () => selectTool(action1Btn, "tool1"));
-action2Btn.addEventListener("click", () => selectTool(action2Btn, "tool2"));
-action3Btn.addEventListener("click", () => selectTool(action3Btn, "tool3"));
-
-// Video click handler for placing notifications
-videoEl.addEventListener("click", (event) => {
-    if (!selectedTool) {
-        console.log("No tool selected. Please select a button first.");
-        return;
-    }
-
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.warn("WebSocket not connected");
-        return;
-    }
-
-    // Get the click coordinates relative to the video element
-    const rect = videoEl.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    // Calculate percentage position (so it scales with different screen sizes)
-    const xPercent = (x / rect.width) * 100;
-    const yPercent = (y / rect.height) * 100;
-
-    console.log("========== VIEWER CLICK DEBUG ==========");
-    console.log(`Video dimensions: ${rect.width} x ${rect.height}`);
-    console.log(`Click position (pixels): ${x}, ${y}`);
-    console.log(`Click position (percent): ${xPercent.toFixed(2)}%, ${yPercent.toFixed(2)}%`);
-    console.log(`Selected tool: ${selectedTool}`);
-    console.log("=======================================");
-
-    // Send notification with position and tool type
-    const message = {
-        type: "viewerMessage",
-        code: currentCode,
-        message: `Tool ${selectedTool} placed at position`,
-        tool: selectedTool,
-        position: {
-            xPercent: parseFloat(xPercent.toFixed(2)),
-            yPercent: parseFloat(yPercent.toFixed(2)),
-            x: Math.round(x),
-            y: Math.round(y)
-        }
-    };
-
-    console.log("Sending message to broadcaster:", JSON.stringify(message, null, 2));
-    ws.send(JSON.stringify(message));
-
-    // Visual feedback - create a temporary marker on the video
-    createTemporaryMarker(xPercent, yPercent, selectedTool);
-});
-
-// Create a temporary visual marker to show where the user clicked
-function createTemporaryMarker(xPercent, yPercent, tool) {
-    const marker = document.createElement('div');
-    marker.className = 'video-marker';
-    marker.style.left = `${xPercent}%`;
-    marker.style.top = `${yPercent}%`;
-
-    console.log(`Creating temp marker at: ${xPercent}%, ${yPercent}%`);
-
-    // Different colors for different tools
-    const colors = {
-        'tool1': '#4CAF50',
-        'tool2': '#2196F3',
-        'tool3': '#FF9800'
-    };
-    marker.style.borderColor = colors[tool] || '#fff';
-
-    const videoWrapper = document.getElementById('videoWrapper');
-    videoWrapper.appendChild(marker);
-
-    // Remove marker after animation
-    setTimeout(() => {
-        marker.remove();
-    }, 1500);
-}
 
 joinBtn.onclick = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -133,7 +35,9 @@ function startViewer(code) {
 
     // Hide join form and show stream container
     joinForm.style.display = "none";
-    streamContainer.style.display = "block";
+    streamContainer.style.display = "flex";
+
+
 
     // Use your Render backend (secure). For pure LAN testing replace with ws://<backend-lan-ip>:8080
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
@@ -166,6 +70,7 @@ function startViewer(code) {
             // Show join form again on error
             joinForm.style.display = "flex";
             streamContainer.style.display = "none";
+
             return;
         }
         if (msg.type === "offer") {

@@ -73,15 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         pcs.delete(msg.id);
                     }
                 } else if (msg.type === "viewerMessage") {
-                    console.log("Viewer message received:", msg);
-
-                    // Check if this is a positioned notification
-                    if (msg.position) {
-                        showPositionedNotification(msg.tool, msg.position, msg.message);
-                    } else {
-                        // Regular message notification
-                        showMessageOverlay(msg.message);
-                    }
+                    console.log("Viewer message received:", msg.message);
+                    showMessageOverlay(msg.message);
                 }
             });
 
