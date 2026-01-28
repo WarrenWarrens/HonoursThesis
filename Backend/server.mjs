@@ -1,4 +1,4 @@
-// server.mjs
+// server.mjs - FIXED VERSION
 import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
@@ -15,7 +15,6 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const broadcasters = new Map();
-// Map<roomCode, { ws, viewers: Map<viewerId, ws> }>
 
 function generateRoomCode() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -29,9 +28,6 @@ wss.on("connection", (ws, req) => {
     const role = url.searchParams.get("role");
     const code = url.searchParams.get("code");
 
-    // -----------------------------------
-    // BROADCASTER CONNECTS
-    // -----------------------------------
     if (role === "broadcaster") {
         const roomCode = generateRoomCode();
         broadcasters.set(roomCode, { ws, viewers: new Map() });
@@ -54,12 +50,26 @@ wss.on("connection", (ws, req) => {
                 broadcasters.delete(roomCode);
             }
         });
+
+        // IMPORTANT: Handle messages from broadcaster to viewers
+        ws.on("message", (message) => {
+            const msg = JSON.parse(message);
+            console.log("server: received message from broadcaster:", msg.type, msg);
+
+            // Forward messages to specific viewer
+            if (msg.id && msg.type !== "room-code") {
+                const room = broadcasters.get(roomCode);
+                const target = room?.viewers.get(msg.id);
+
+                if (target && target.readyState === 1) {
+                    target.send(JSON.stringify(msg));
+                    console.log(`server: forwarded ${msg.type} to viewer ${msg.id} in room ${roomCode}`);
+                } else {
+                    console.warn(`server: target viewer ${msg.id} not found/ready in room ${roomCode}`);
+                }
+            }
+        });
     }
-
-
-    // -----------------------------------
-    // VIEWER CONNECTS
-    // -----------------------------------
 
     if (role === "viewer" && code) {
         const room = broadcasters.get(code.toUpperCase());
@@ -73,33 +83,36 @@ wss.on("connection", (ws, req) => {
         room.viewers.set(id, ws);
         console.log(`Viewer joined room ${code} (${id}) -- stored in room.viewers`);
 
-        // for debug: log number of viewers
         console.log(`Room ${code} viewer count: ${room.viewers.size}`);
 
         room.ws.send(JSON.stringify({ type: "viewer-joined", id }));
 
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
-            console.log(`server: received message from viewer ${id} in ${code}:`, msg.type, msg);
+            console.log(`server: received message from viewer ${id} in ${code}:`, msg.type);
+            console.log(`server: full message data:`, JSON.stringify(msg, null, 2));
 
-            // NEW FEATURE: viewer sends message to streamer overlay
+            // CRITICAL FIX: Forward the ENTIRE message object to broadcaster
+            // Don't just forward specific fields, forward everything
             if (msg.type === "viewerMessage" || msg.type === "viewer_notify") {
-                console.log(`Viewer in ${code} sent: ${msg.message}`);
+                console.log(`server: forwarding viewer message to broadcaster for room ${code}`);
 
                 if (room.ws && room.ws.readyState === 1) {
-                    room.ws.send(JSON.stringify({
-                        type: "viewerMessage",
-                        id,
-                        message: msg.message
-                    }));
-                    console.log(`server: forwarded viewerMessage to broadcaster for room ${code}`);
+                    // Add the viewer ID to the message and forward EVERYTHING
+                    const messageToSend = {
+                        ...msg,  // Spread all properties from original message
+                        id       // Add viewer ID
+                    };
+
+                    console.log(`server: sending to broadcaster:`, JSON.stringify(messageToSend, null, 2));
+                    room.ws.send(JSON.stringify(messageToSend));
                 } else {
                     console.warn(`server: broadcaster for room ${code} not connected`);
                 }
                 return;
             }
 
-            // normal viewer → broadcaster relay
+            // For other message types (answer, candidate), forward to broadcaster
             if (room.ws && room.ws.readyState === 1) {
                 room.ws.send(JSON.stringify({ ...msg, id }));
                 console.log(`server: relayed viewer ${id} -> broadcaster: ${msg.type}`);
@@ -108,33 +121,19 @@ wss.on("connection", (ws, req) => {
             }
         });
 
-    }
-
-    // -----------------------------------
-    // BROADCASTER → VIEWER
-    // -----------------------------------
-    ws.on("message", (message) => {
-        const msg = JSON.parse(message);
-        // debug log every message received from broadcaster
-        console.log("server: received message from broadcaster:", msg.type, msg);
-
-        if (role === "broadcaster" && msg.id && msg.type !== "room-code") {
-            const room = broadcasters.get(ws.roomCode);
-            const target = room?.viewers.get(msg.id);
-
-            if (target && target.readyState === 1) {
-                target.send(JSON.stringify(msg));
-                console.log(`server: forwarded ${msg.type} to viewer ${msg.id} in room ${ws.roomCode}`);
-            } else {
-                console.warn(`server: target viewer ${msg.id} not found/ready in room ${ws.roomCode}`);
+        ws.on("close", () => {
+            console.log(`Viewer ${id} disconnected from room ${code}`);
+            room.viewers.delete(id);
+            if (room.ws && room.ws.readyState === 1) {
+                room.ws.send(JSON.stringify({ type: "viewer-left", id }));
             }
-        }
-    });
+        });
+    }
 });
 
-// Viewer assets
 app.use(express.static(path.join(__dirname, "Viewer")));
 
-server.listen(8080, () => {
-    console.log("Server running → http://localhost:8080");
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+    console.log(`Server running → http://localhost:${PORT}`);
 });
