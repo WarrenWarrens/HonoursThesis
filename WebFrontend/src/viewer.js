@@ -5,7 +5,6 @@ const codeInput = document.getElementById("codeInput");
 const errorEl = document.getElementById("error");
 const videoEl = document.getElementById("remoteVideo");
 const notifyBtn = document.getElementById("notifyBtn");
-const streamContainer = document.getElementById("streamContainer");
 const action1Btn = document.getElementById("action1Btn");
 const action2Btn = document.getElementById("action2Btn");
 const action3Btn = document.getElementById("action3Btn");
