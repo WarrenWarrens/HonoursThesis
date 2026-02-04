@@ -1,4 +1,4 @@
-// viewer.js - with marker placement functionality
+// viewer.js - with color selection and marker placement
 const joinForm = document.getElementById("joinForm");
 const joinBtn = document.getElementById("joinBtn");
 const codeInput = document.getElementById("codeInput");
@@ -7,8 +7,20 @@ const videoEl = document.getElementById("remoteVideo");
 const notifyBtn = document.getElementById("notifyBtn");
 const streamContainer = document.getElementById("streamContainer");
 
+// Color selection buttons
+const redBtn = document.getElementById("redBtn");
+const blueBtn = document.getElementById("blueBtn");
+const greenBtn = document.getElementById("greenBtn");
+
 let ws, pc;
 let currentCode = null;
+let selectedColor = null; // null, 'red', 'blue', or 'green'
+
+const colorMap = {
+    red: '#ff0000',
+    blue: '#0066ff',
+    green: '#00ff00'
+};
 
 joinBtn.onclick = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -19,11 +31,48 @@ joinBtn.onclick = () => {
     startViewer(code);
 };
 
+// Color button handlers
+function setupColorButtons() {
+    redBtn.addEventListener("click", () => toggleColor('red'));
+    blueBtn.addEventListener("click", () => toggleColor('blue'));
+    greenBtn.addEventListener("click", () => toggleColor('green'));
+}
+
+function toggleColor(color) {
+    if (selectedColor === color) {
+        // Deselect if clicking the same color
+        selectedColor = null;
+        updateButtonStates();
+    } else {
+        // Select new color
+        selectedColor = color;
+        updateButtonStates();
+    }
+}
+
+function updateButtonStates() {
+    // Reset all buttons to default state
+    redBtn.style.opacity = selectedColor === 'red' ? '1' : '0.5';
+    redBtn.style.transform = selectedColor === 'red' ? 'scale(1.1)' : 'scale(1)';
+    redBtn.style.boxShadow = selectedColor === 'red' ? '0 0 15px rgba(255, 0, 0, 0.8)' : 'none';
+
+    blueBtn.style.opacity = selectedColor === 'blue' ? '1' : '0.5';
+    blueBtn.style.transform = selectedColor === 'blue' ? 'scale(1.1)' : 'scale(1)';
+    blueBtn.style.boxShadow = selectedColor === 'blue' ? '0 0 15px rgba(0, 102, 255, 0.8)' : 'none';
+
+    greenBtn.style.opacity = selectedColor === 'green' ? '1' : '0.5';
+    greenBtn.style.transform = selectedColor === 'green' ? 'scale(1.1)' : 'scale(1)';
+    greenBtn.style.boxShadow = selectedColor === 'green' ? '0 0 15px rgba(0, 255, 0, 0.8)' : 'none';
+}
+
 function startViewer(code) {
     currentCode = code;
     joinForm.style.display = "none";
     streamContainer.style.display = "flex";
     videoEl.style.display = "block";
+
+    // Setup color buttons
+    setupColorButtons();
 
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
 
@@ -54,6 +103,12 @@ function startViewer(code) {
             return;
         }
 
+        // Check if a color is selected
+        if (!selectedColor) {
+            alert("Please select a marker color first!");
+            return;
+        }
+
         // Get click coordinates relative to video element
         const rect = videoEl.getBoundingClientRect();
         const x = event.clientX - rect.left;
@@ -63,21 +118,22 @@ function startViewer(code) {
         const xPercent = (x / rect.width) * 100;
         const yPercent = (y / rect.height) * 100;
 
-        console.log(`Viewer clicked at: ${xPercent.toFixed(2)}%, ${yPercent.toFixed(2)}%`);
+        console.log(`Viewer clicked at: ${xPercent.toFixed(2)}%, ${yPercent.toFixed(2)}% with color ${selectedColor}`);
 
         // Send marker placement to broadcaster
         ws.send(JSON.stringify({
             type: "viewerMessage",
             code: currentCode,
-            message: `Marker placed at ${xPercent.toFixed(1)}%, ${yPercent.toFixed(1)}%`,
+            message: `${selectedColor.toUpperCase()} marker placed at ${xPercent.toFixed(1)}%, ${yPercent.toFixed(1)}%`,
             markerData: {
                 xPercent: xPercent,
-                yPercent: yPercent
+                yPercent: yPercent,
+                color: selectedColor
             }
         }));
 
         // Visual feedback for viewer
-        showLocalMarker(x, y);
+        showLocalMarker(x, y, selectedColor);
     });
 
     ws.onmessage = async (event) => {
@@ -156,20 +212,21 @@ function startViewer(code) {
     };
 }
 
-// Show temporary visual marker on viewer's side
-function showLocalMarker(x, y) {
+// Show temporary visual marker on viewer's side with color
+function showLocalMarker(x, y, color) {
     const marker = document.createElement("div");
     marker.style.position = "absolute";
     marker.style.left = `${x}px`;
     marker.style.top = `${y}px`;
     marker.style.width = "20px";
     marker.style.height = "20px";
-    marker.style.backgroundColor = "rgba(255, 0, 0, 0.7)";
+    marker.style.backgroundColor = colorMap[color];
     marker.style.borderRadius = "50%";
     marker.style.border = "2px solid white";
     marker.style.transform = "translate(-50%, -50%)";
     marker.style.pointerEvents = "none";
     marker.style.zIndex = "1000";
+    marker.style.boxShadow = `0 0 10px ${colorMap[color]}`;
 
     // Position relative to video container
     const container = streamContainer;
@@ -178,6 +235,8 @@ function showLocalMarker(x, y) {
 
     // Remove marker after 2 seconds
     setTimeout(() => {
-        marker.remove();
+        marker.style.transition = "opacity 0.5s";
+        marker.style.opacity = "0";
+        setTimeout(() => marker.remove(), 500);
     }, 2000);
 }

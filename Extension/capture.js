@@ -9,6 +9,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const overlayHeader = document.getElementById("overlay-header");
     let offsetX = 0, offsetY = 0, isDragging = false;
 
+    const colorMap = {
+        red: '#ff0000',
+        blue: '#0066ff',
+        green: '#00ff00'
+    };
+
     // Make overlay draggable
     if (overlayHeader && overlay) {
         overlayHeader.addEventListener("mousedown", (e) => {
@@ -77,7 +83,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     // Check if message contains marker data
                     if (msg.markerData) {
-                        showMarkerOnVideo(msg.markerData.xPercent, msg.markerData.yPercent, msg.message);
+                        const color = msg.markerData.color || 'red';
+                        showMarkerOnVideo(
+                            msg.markerData.xPercent,
+                            msg.markerData.yPercent,
+                            msg.message,
+                            color
+                        );
                     } else {
                         // Regular text message
                         showMessageOverlay(msg.message);
@@ -150,17 +162,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     }
 
-    // New function to display markers on the video at the same location viewer clicked
-    function showMarkerOnVideo(xPercent, yPercent, message) {
+    // Display colored markers on the video at the same location viewer clicked
+    function showMarkerOnVideo(xPercent, yPercent, message, color) {
+        const markerColor = colorMap[color] || '#ff0000';
+
         // Create marker element
         const marker = document.createElement("div");
         marker.style.position = "absolute";
         marker.style.width = "30px";
         marker.style.height = "30px";
-        marker.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
+        marker.style.backgroundColor = markerColor;
         marker.style.borderRadius = "50%";
         marker.style.border = "3px solid white";
-        marker.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+        marker.style.boxShadow = `0 0 15px ${markerColor}`;
         marker.style.zIndex = "9998";
         marker.style.pointerEvents = "none";
 
@@ -181,9 +195,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const absoluteY = videoRect.top + markerY;
         marker.style.left = `${absoluteX}px`;
         marker.style.top = `${absoluteY}px`;
-        marker.style.position = "fixed"; // Use fixed positioning
+        marker.style.position = "fixed";
 
-        // Also show the message in overlay
+        // Also show the message in overlay with color indicator
         showMessageOverlay(message);
 
         // Add pulsing animation

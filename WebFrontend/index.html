@@ -14,20 +14,14 @@
 			margin: 0;
 			font-family: sans-serif;
 		}
-		video {
-			width: 90%;
-			max-width: 900px;
-			background: black;
-			border-radius: 8px;
-			display: none;
-			cursor: crosshair;
-		}
+
 		#joinForm {
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			gap: 10px;
 		}
+
 		input {
 			font-size: 1.5rem;
 			text-align: center;
@@ -35,6 +29,7 @@
 			padding: 5px 10px;
 			width: 120px;
 		}
+
 		button {
 			font-size: 1rem;
 			padding: 10px 20px;
@@ -43,17 +38,22 @@
 			border: none;
 			border-radius: 5px;
 			cursor: pointer;
+			transition: all 0.3s ease;
 		}
+
 		button:hover {
 			background: #0056b3;
 		}
+
 		#streamContainer {
 			display: none;
 			flex-direction: column;
 			align-items: center;
 			gap: 15px;
 			width: 100%;
+			max-width: 1200px;
 		}
+
 		.instructions {
 			background: #fff;
 			padding: 15px;
@@ -63,17 +63,138 @@
 			width: 90%;
 			text-align: center;
 		}
+
 		.instructions h3 {
 			margin-top: 0;
 			color: #333;
 		}
+
 		.instructions p {
 			margin: 5px 0;
 			color: #666;
 		}
+
+		/* Main content area with video and buttons */
+		.viewer-content {
+			display: flex;
+			gap: 20px;
+			align-items: flex-start;
+			justify-content: center;
+			width: 90%;
+			max-width: 1200px;
+		}
+
+		.video-container {
+			flex: 1;
+			position: relative;
+		}
+
+		video {
+			width: 100%;
+			max-width: 900px;
+			background: black;
+			border-radius: 8px;
+			display: block;
+			cursor: crosshair;
+		}
+
+		/* Color button panel */
+		.button-panel {
+			display: flex;
+			flex-direction: column;
+			gap: 15px;
+			padding: 20px;
+			background: white;
+			border-radius: 10px;
+			box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+			min-width: 120px;
+		}
+
+		.button-panel h4 {
+			margin: 0 0 10px 0;
+			text-align: center;
+			color: #333;
+			font-size: 0.9rem;
+		}
+
+		.color-btn {
+			width: 80px;
+			height: 80px;
+			border-radius: 50%;
+			border: 3px solid white;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			opacity: 0.5;
+		}
+
+		.color-btn:hover {
+			transform: scale(1.05);
+			opacity: 0.8;
+		}
+
+		#redBtn {
+			background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+		}
+
+		#blueBtn {
+			background: linear-gradient(135deg, #4488ff 0%, #0044cc 100%);
+		}
+
+		#greenBtn {
+			background: linear-gradient(135deg, #44ff44 0%, #00cc00 100%);
+		}
+
+		#notifyBtn {
+			width: 80px;
+			height: 80px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, #ffa500 0%, #ff6600 100%);
+			border: 3px solid white;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 0.7rem;
+			text-align: center;
+			padding: 5px;
+			line-height: 1.2;
+		}
+
+		#notifyBtn:hover {
+			transform: scale(1.05);
+			background: linear-gradient(135deg, #ff9500 0%, #ff5500 100%);
+		}
+
+		.divider {
+			height: 2px;
+			background: #e0e0e0;
+			margin: 10px 0;
+		}
+
 		#error {
 			color: red;
 			font-weight: bold;
+		}
+
+		/* Responsive design */
+		@media (max-width: 768px) {
+			.viewer-content {
+				flex-direction: column;
+				align-items: center;
+			}
+
+			.button-panel {
+				flex-direction: row;
+				width: 90%;
+				justify-content: center;
+			}
+
+			.divider {
+				width: 2px;
+				height: 80px;
+				margin: 0 10px;
+			}
 		}
 	</style>
 </head>
@@ -89,11 +210,25 @@
 <div id="streamContainer">
 	<div class="instructions">
 		<h3>How to Use</h3>
-		<p><strong>Click on the video</strong> to place a marker - the broadcaster will see it!</p>
-		<p>Or use the button below to send a simple notification</p>
+		<p><strong>1.</strong> Select a color from the panel on the right</p>
+		<p><strong>2.</strong> Click on the video to place a colored marker</p>
+		<p><strong>3.</strong> The broadcaster will see your marker in real-time!</p>
 	</div>
-	<video id="remoteVideo" autoplay playsinline></video>
-	<button id="notifyBtn">Send Notification</button>
+
+	<div class="viewer-content">
+		<div class="video-container">
+			<video id="remoteVideo" autoplay playsinline></video>
+		</div>
+
+		<div class="button-panel">
+			<h4>Marker Colors</h4>
+			<button class="color-btn" id="redBtn" title="Red Marker"></button>
+			<button class="color-btn" id="blueBtn" title="Blue Marker"></button>
+			<button class="color-btn" id="greenBtn" title="Green Marker"></button>
+			<div class="divider"></div>
+			<button id="notifyBtn">Send<br>Notification</button>
+		</div>
+	</div>
 </div>
 
 <script type="module" src="src/viewer.js"></script>
