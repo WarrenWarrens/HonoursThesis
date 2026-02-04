@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const overlayHeader = document.getElementById("overlay-header");
     let offsetX = 0, offsetY = 0, isDragging = false;
 
+    // Make overlay draggable
     if (overlayHeader && overlay) {
         overlayHeader.addEventListener("mousedown", (e) => {
             isDragging = true;
@@ -38,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
             ws = new WebSocket(
                 "wss://honoursthesisstreambackend.onrender.com?role=broadcaster"
             );
-
 
             ws.addEventListener("open", () => {
                 console.log("Broadcaster connected (WS open)");
@@ -73,8 +73,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         pcs.delete(msg.id);
                     }
                 } else if (msg.type === "viewerMessage") {
-                    console.log("Viewer message received:", msg.message);
-                    showMessageOverlay(msg.message);
+                    console.log("Viewer message received:", msg);
+
+                    // Check if message contains marker data
+                    if (msg.markerData) {
+                        showMarkerOnVideo(msg.markerData.xPercent, msg.markerData.yPercent, msg.message);
+                    } else {
+                        // Regular text message
+                        showMessageOverlay(msg.message);
+                    }
                 }
             });
 
@@ -107,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             console.log("broadcaster: created offer for", viewerId);
-            // send the offer and log
             ws.send(JSON.stringify({ type: "offer", id: viewerId, offer }));
             console.log("broadcaster: sent offer to server for viewer", viewerId);
         } catch (err) {
@@ -127,14 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     stopBtn.addEventListener("click", stopCapture);
 
-    function showNotificationPopup(message) {
-        const popup = document.getElementById("notify-popup");
-        if (!popup) return;
-        popup.textContent = message || "Viewer sent a notification!";
-        popup.style.display = "block";
-        setTimeout(() => (popup.style.display = "none"), 3000);
-    }
-
     let hideTimeout;
     function showMessageOverlay(text) {
         const box = document.getElementById("overlay-container");
@@ -152,80 +150,60 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     }
 
-    // UPDATED FUNCTION: Show positioned notification on screen with debugging
-    function showPositionedNotification(tool, position, message) {
-        console.log("========== POSITION DEBUG ==========");
-        console.log(`Tool: ${tool}`);
-        console.log(`Position object:`, position);
-        console.log(`X Percent: ${position.xPercent}%`);
-        console.log(`Y Percent: ${position.yPercent}%`);
-        console.log(`X Pixels: ${position.x}px`);
-        console.log(`Y Pixels: ${position.y}px`);
-        console.log("====================================");
+    // New function to display markers on the video at the same location viewer clicked
+    function showMarkerOnVideo(xPercent, yPercent, message) {
+        // Create marker element
+        const marker = document.createElement("div");
+        marker.style.position = "absolute";
+        marker.style.width = "30px";
+        marker.style.height = "30px";
+        marker.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
+        marker.style.borderRadius = "50%";
+        marker.style.border = "3px solid white";
+        marker.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+        marker.style.zIndex = "9998";
+        marker.style.pointerEvents = "none";
 
-        // Create a notification marker on the screen
-        const marker = document.createElement('div');
-        marker.className = 'positioned-marker';
+        // Calculate position based on video preview dimensions
+        const videoRect = videoEl.getBoundingClientRect();
+        const markerX = (xPercent / 100) * videoRect.width;
+        const markerY = (yPercent / 100) * videoRect.height;
 
-        // IMPORTANT: Set position immediately when creating element
-        marker.style.left = position.xPercent + '%';
-        marker.style.top = position.yPercent + '%';
+        marker.style.left = `${markerX}px`;
+        marker.style.top = `${markerY}px`;
+        marker.style.transform = "translate(-50%, -50%)";
 
-        console.log(`Setting marker position to: left=${position.xPercent}%, top=${position.yPercent}%`);
-
-        // Different colors for different tools
-        const colors = {
-            'tool1': '#4CAF50',
-            'tool2': '#2196F3',
-            'tool3': '#FF9800'
-        };
-
-        const toolNames = {
-            'tool1': 'Tool 1',
-            'tool2': 'Tool 2',
-            'tool3': 'Tool 3'
-        };
-
-        const color = colors[tool] || '#FF0000'; // Default to red if tool not found
-        console.log(`Using color: ${color} for tool: ${tool}`);
-
-        marker.style.borderColor = color;
-        marker.style.backgroundColor = color;
-        marker.style.color = color; // For the ::before pseudo-element
-
-        // Add label with coordinates for debugging
-        const label = document.createElement('div');
-        label.className = 'marker-label';
-        label.innerHTML = `${toolNames[tool] || tool}<br><small>(${position.xPercent}%, ${position.yPercent}%)</small>`;
-        label.style.backgroundColor = color;
-        marker.appendChild(label);
-
-        // Add to body (full screen positioning)
+        // Add to body positioned relative to video
         document.body.appendChild(marker);
-        console.log("Marker added to body");
 
-        // Log computed style to verify
-        const computedStyle = window.getComputedStyle(marker);
-        console.log(`Computed position: left=${computedStyle.left}, top=${computedStyle.top}`);
-        console.log(`Marker dimensions: ${computedStyle.width} x ${computedStyle.height}`);
+        // Adjust position to be relative to video element on page
+        const absoluteX = videoRect.left + markerX;
+        const absoluteY = videoRect.top + markerY;
+        marker.style.left = `${absoluteX}px`;
+        marker.style.top = `${absoluteY}px`;
+        marker.style.position = "fixed"; // Use fixed positioning
 
-        // Animate in
+        // Also show the message in overlay
+        showMessageOverlay(message);
+
+        // Add pulsing animation
+        marker.style.animation = "pulse 0.5s ease-in-out";
+
+        // Remove marker after 5 seconds
         setTimeout(() => {
-            marker.classList.add('show');
-            console.log("Marker 'show' class added");
-        }, 10);
-
-        // Remove after animation
-        setTimeout(() => {
-            marker.classList.remove('show');
-            console.log("Marker fading out");
-            setTimeout(() => {
-                marker.remove();
-                console.log("Marker removed");
-            }, 500);
-        }, 5000); // Changed to 5 seconds for easier debugging
-
-        // Also show a brief notification with debugging info
-        showNotificationPopup(`${toolNames[tool]} at (${position.xPercent}%, ${position.yPercent}%)`);
+            marker.style.transition = "opacity 0.5s";
+            marker.style.opacity = "0";
+            setTimeout(() => marker.remove(), 500);
+        }, 5000);
     }
+
+    // Add CSS animation for marker pulse
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.3); }
+        }
+    `;
+    document.head.appendChild(style);
 });

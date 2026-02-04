@@ -1,4 +1,4 @@
-// viewer.js
+// viewer.js - with marker placement functionality
 const joinForm = document.getElementById("joinForm");
 const joinBtn = document.getElementById("joinBtn");
 const codeInput = document.getElementById("codeInput");
@@ -8,7 +8,7 @@ const notifyBtn = document.getElementById("notifyBtn");
 const streamContainer = document.getElementById("streamContainer");
 
 let ws, pc;
-let currentCode = null; // Define currentCode variable
+let currentCode = null;
 
 joinBtn.onclick = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -20,12 +20,11 @@ joinBtn.onclick = () => {
 };
 
 function startViewer(code) {
-    currentCode = code; // Store the code
+    currentCode = code;
     joinForm.style.display = "none";
     streamContainer.style.display = "flex";
     videoEl.style.display = "block";
 
-    // Use your Render backend (secure). For pure LAN testing replace with ws://<backend-lan-ip>:8080
     ws = new WebSocket(`wss://honoursthesisstreambackend.onrender.com?role=viewer&code=${code}`);
 
     ws.onopen = () => {
@@ -33,18 +32,52 @@ function startViewer(code) {
         ws.send(JSON.stringify({ type: "join", role: "viewer", code }));
     };
 
+    // Simple notify button handler
     notifyBtn.addEventListener("click", () => {
         if (ws?.readyState === WebSocket.OPEN) {
-            console.log("Viewer pressed button!");
+            console.log("Viewer pressed notify button!");
             ws.send(JSON.stringify({
                 type: "viewerMessage",
                 code: currentCode,
-                message: "Viewer pressed the button!"
+                message: "Viewer pressed the notify button!"
             }));
             alert("Notification sent to the streamer!");
         } else {
             alert("Connection not ready yet!");
         }
+    });
+
+    // Marker placement on video click
+    videoEl.addEventListener("click", (event) => {
+        if (ws?.readyState !== WebSocket.OPEN) {
+            alert("Connection not ready yet!");
+            return;
+        }
+
+        // Get click coordinates relative to video element
+        const rect = videoEl.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        // Calculate percentage position (so it works regardless of video size)
+        const xPercent = (x / rect.width) * 100;
+        const yPercent = (y / rect.height) * 100;
+
+        console.log(`Viewer clicked at: ${xPercent.toFixed(2)}%, ${yPercent.toFixed(2)}%`);
+
+        // Send marker placement to broadcaster
+        ws.send(JSON.stringify({
+            type: "viewerMessage",
+            code: currentCode,
+            message: `Marker placed at ${xPercent.toFixed(1)}%, ${yPercent.toFixed(1)}%`,
+            markerData: {
+                xPercent: xPercent,
+                yPercent: yPercent
+            }
+        }));
+
+        // Visual feedback for viewer
+        showLocalMarker(x, y);
     });
 
     ws.onmessage = async (event) => {
@@ -61,9 +94,7 @@ function startViewer(code) {
 
         if (msg.type === "offer") {
             const ICE_CONFIG = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
-
             pc = new RTCPeerConnection(ICE_CONFIG);
-
             let remoteStream = new MediaStream();
 
             pc.ontrack = (event) => {
@@ -118,10 +149,35 @@ function startViewer(code) {
     ws.onerror = (e) => console.error("Viewer WS error:", e);
     ws.onclose = () => {
         console.log("Viewer WS closed");
-        // Optionally reset UI state
         joinForm.style.display = "flex";
         streamContainer.style.display = "none";
         videoEl.style.display = "none";
         errorEl.textContent = "Connection closed. Please try again.";
     };
+}
+
+// Show temporary visual marker on viewer's side
+function showLocalMarker(x, y) {
+    const marker = document.createElement("div");
+    marker.style.position = "absolute";
+    marker.style.left = `${x}px`;
+    marker.style.top = `${y}px`;
+    marker.style.width = "20px";
+    marker.style.height = "20px";
+    marker.style.backgroundColor = "rgba(255, 0, 0, 0.7)";
+    marker.style.borderRadius = "50%";
+    marker.style.border = "2px solid white";
+    marker.style.transform = "translate(-50%, -50%)";
+    marker.style.pointerEvents = "none";
+    marker.style.zIndex = "1000";
+
+    // Position relative to video container
+    const container = streamContainer;
+    container.style.position = "relative";
+    container.appendChild(marker);
+
+    // Remove marker after 2 seconds
+    setTimeout(() => {
+        marker.remove();
+    }, 2000);
 }
