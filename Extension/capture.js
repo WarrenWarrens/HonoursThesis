@@ -306,22 +306,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else if (msg.type === "viewerMessage") {
                     console.log("Viewer message received:", msg);
 
-                    // --- UPDATED MARKER LOGIC ---
                     if (msg.markerData) {
-                        // 1. Find the currently active tab (where the user is looking)
-                        browser.tabs.query({active: true, currentWindow: true})
-                            .then((tabs) => {
-                                if (tabs.length > 0) {
-                                    // 2. Send the marker data to the Content Script on that tab
-                                    browser.tabs.sendMessage(tabs[0].id, {
-                                        type: "SHOW_MARKER",
-                                        data: msg.markerData,
-                                        message: msg.message
-                                    }).catch(err => {
-                                        console.warn("Could not send marker to active tab (content script might not be running there):", err);
-                                    });
-                                }
-                            });
+                        // CHANGE: Use 'lastFocusedWindow: true' instead of 'currentWindow: true'
+                        // This ensures we find the tab the user is ACTUALLY looking at,
+                        // even if they are in a different window from the stream.
+                        browser.tabs.query({active: true, lastFocusedWindow: true}).then((tabs) => {
+                            if (tabs.length > 0) {
+                                // Send the marker to the active tab in the focused window
+                                browser.tabs.sendMessage(tabs[0].id, {
+                                    type: "SHOW_MARKER",
+                                    data: msg.markerData,
+                                    message: msg.message
+                                }).catch(err => {
+                                    console.error("Could not send to tab. content.js might not be loaded:", err);
+                                });
+                            } else {
+                                console.warn("No active tab found in the last focused window.");
+                            }
+                        });
 
                         // Optional: Uncomment this if you ALSO want it on the preview video
 
