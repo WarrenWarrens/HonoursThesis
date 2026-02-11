@@ -18,8 +18,8 @@ let selectedColor = null; // null, 'red', 'blue', or 'green'
 
 const colorMap = {
     red: '#ff0000',
-    blue: '#0066ff',
-    green: '#00ff00'
+    blue: '#4488ff',
+    green: '#ffdd00'
 };
 
 joinBtn.onclick = () => {
@@ -51,25 +51,25 @@ function toggleColor(color) {
 }
 
 function updateButtonStates() {
-    // Reset all buttons to default state
-    redBtn.style.opacity = selectedColor === 'red' ? '1' : '0.5';
-    redBtn.style.transform = selectedColor === 'red' ? 'scale(1.1)' : 'scale(1)';
-    redBtn.style.boxShadow = selectedColor === 'red' ? '0 0 15px rgba(255, 0, 0, 0.8)' : 'none';
+    // Remove 'selected' class from all buttons
+    redBtn.classList.remove('selected');
+    blueBtn.classList.remove('selected');
+    greenBtn.classList.remove('selected');
 
-    blueBtn.style.opacity = selectedColor === 'blue' ? '1' : '0.5';
-    blueBtn.style.transform = selectedColor === 'blue' ? 'scale(1.1)' : 'scale(1)';
-    blueBtn.style.boxShadow = selectedColor === 'blue' ? '0 0 15px rgba(0, 102, 255, 0.8)' : 'none';
-
-    greenBtn.style.opacity = selectedColor === 'green' ? '1' : '0.5';
-    greenBtn.style.transform = selectedColor === 'green' ? 'scale(1.1)' : 'scale(1)';
-    greenBtn.style.boxShadow = selectedColor === 'green' ? '0 0 15px rgba(0, 255, 0, 0.8)' : 'none';
+    // Add 'selected' class to the currently selected button
+    if (selectedColor === 'red') {
+        redBtn.classList.add('selected');
+    } else if (selectedColor === 'blue') {
+        blueBtn.classList.add('selected');
+    } else if (selectedColor === 'green') {
+        greenBtn.classList.add('selected');
+    }
 }
 
 function startViewer(code) {
     currentCode = code;
     joinForm.style.display = "none";
     streamContainer.style.display = "flex";
-    videoEl.style.display = "block";
 
     // Setup color buttons
     setupColorButtons();
@@ -81,7 +81,7 @@ function startViewer(code) {
         ws.send(JSON.stringify({ type: "join", role: "viewer", code }));
     };
 
-    // Simple notify button handler
+    // Notify button handler
     notifyBtn.addEventListener("click", () => {
         if (ws?.readyState === WebSocket.OPEN) {
             console.log("Viewer pressed notify button!");
@@ -90,22 +90,27 @@ function startViewer(code) {
                 code: currentCode,
                 message: "Viewer pressed the notify button!"
             }));
-            alert("Notification sent to the streamer!");
+
+            // Visual feedback
+            notifyBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                notifyBtn.style.transform = 'scale(1)';
+            }, 200);
         } else {
-            alert("Connection not ready yet!");
+            console.warn("Connection not ready yet!");
         }
     });
 
     // Marker placement on video click
     videoEl.addEventListener("click", (event) => {
         if (ws?.readyState !== WebSocket.OPEN) {
-            alert("Connection not ready yet!");
+            console.warn("Connection not ready yet!");
             return;
         }
 
         // Check if a color is selected
         if (!selectedColor) {
-            alert("Please select a marker color first!");
+            console.warn("No color selected - please select a marker color first");
             return;
         }
 
@@ -133,7 +138,7 @@ function startViewer(code) {
         }));
 
         // Visual feedback for viewer
-        showLocalMarker(x, y, selectedColor);
+        showLocalMarker(x + rect.left, y + rect.top, selectedColor);
     });
 
     ws.onmessage = async (event) => {
@@ -144,7 +149,6 @@ function startViewer(code) {
             errorEl.textContent = msg.message;
             joinForm.style.display = "flex";
             streamContainer.style.display = "none";
-            videoEl.style.display = "none";
             return;
         }
 
@@ -173,7 +177,7 @@ function startViewer(code) {
 
             pc.onicecandidate = (event) => {
                 if (event.candidate) {
-                    console.log("viewer: sending local ICE candidate", event.candidate);
+                    console.log("viewer: sending local ICE candidate");
                     ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
                 }
             };
@@ -192,12 +196,21 @@ function startViewer(code) {
             if (!pc) {
                 console.warn("viewer: received candidate but pc not ready yet");
             } else {
-                console.log("viewer: adding remote candidate", msg.candidate);
+                console.log("viewer: adding remote candidate");
                 try {
                     await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
                 } catch (err) {
                     console.error("viewer: addIceCandidate failed:", err);
                 }
+            }
+        } else if (msg.type === "broadcaster-disconnected") {
+            console.log("Broadcaster disconnected");
+            joinForm.style.display = "flex";
+            streamContainer.style.display = "none";
+            errorEl.textContent = "Broadcaster ended the stream.";
+            if (pc) {
+                pc.close();
+                pc = null;
             }
         }
     };
@@ -207,7 +220,6 @@ function startViewer(code) {
         console.log("Viewer WS closed");
         joinForm.style.display = "flex";
         streamContainer.style.display = "none";
-        videoEl.style.display = "none";
         errorEl.textContent = "Connection closed. Please try again.";
     };
 }
@@ -215,28 +227,18 @@ function startViewer(code) {
 // Show temporary visual marker on viewer's side with color
 function showLocalMarker(x, y, color) {
     const marker = document.createElement("div");
-    marker.style.position = "absolute";
+    marker.className = "local-marker";
+    marker.style.position = "fixed";
     marker.style.left = `${x}px`;
     marker.style.top = `${y}px`;
-    marker.style.width = "20px";
-    marker.style.height = "20px";
     marker.style.backgroundColor = colorMap[color];
-    marker.style.borderRadius = "50%";
-    marker.style.border = "2px solid white";
-    marker.style.transform = "translate(-50%, -50%)";
-    marker.style.pointerEvents = "none";
-    marker.style.zIndex = "1000";
-    marker.style.boxShadow = `0 0 10px ${colorMap[color]}`;
 
-    // Position relative to video container
-    const container = streamContainer;
-    container.style.position = "relative";
-    container.appendChild(marker);
+    document.body.appendChild(marker);
 
-    // Remove marker after 2 seconds
+    // Remove marker after 3 seconds
     setTimeout(() => {
-        marker.style.transition = "opacity 0.5s";
+        marker.style.transition = "opacity 0.5s ease";
         marker.style.opacity = "0";
         setTimeout(() => marker.remove(), 500);
-    }, 2000);
+    }, 3000);
 }

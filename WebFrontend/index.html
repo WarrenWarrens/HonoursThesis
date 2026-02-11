@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Viewer</title>
-	<link rel="stylesheet" href="../WebFrontend/src/style.css" >
+	<link rel="stylesheet" href="src/style.css">
 </head>
 <body>
 
@@ -15,26 +15,33 @@
 </div>
 
 <div id="streamContainer">
-	<div class="instructions">
-		<h3>How to Use</h3>
-		<p><strong>1.</strong> Select a color from the panel on the right</p>
-		<p><strong>2.</strong> Click on the video to place a colored marker</p>
-		<p><strong>3.</strong> The broadcaster will see your marker in real-time!</p>
+	<div class="video-container">
+		<video id="remoteVideo" autoplay playsinline></video>
 	</div>
 
-	<div class="viewer-content">
-		<div class="video-container">
-			<video id="remoteVideo" autoplay playsinline></video>
-		</div>
-
-		<div class="button-panel">
-			<h4>Marker Colors</h4>
-			<button class="color-btn" id="redBtn" title="Red Marker"></button>
-			<button class="color-btn" id="blueBtn" title="Blue Marker"></button>
-			<button class="color-btn" id="greenBtn" title="Green Marker"></button>
-			<div class="divider"></div>
-			<button id="notifyBtn">Send<br>Notification</button>
-		</div>
+	<div class="button-panel">
+		<button class="control-btn" id="redBtn" data-color="red">
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<path d="M12 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm8-4c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM4 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm16 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM4 12c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm16 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM4 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+			</svg>
+		</button>
+		<button class="control-btn" id="blueBtn" data-color="blue">
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<circle cx="6" cy="12" r="2"/>
+				<circle cx="12" cy="12" r="2"/>
+				<circle cx="18" cy="12" r="2"/>
+			</svg>
+		</button>
+		<button class="control-btn" id="greenBtn" data-color="green">
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+			</svg>
+		</button>
+		<button class="control-btn notify" id="notifyBtn">
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+			</svg>
+		</button>
 	</div>
 </div>
 
