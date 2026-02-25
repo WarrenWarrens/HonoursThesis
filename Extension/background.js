@@ -29,5 +29,15 @@ browser.runtime.onMessage.addListener((msg) => {
             message: "A viewer pressed the notify button!"
         });
     }
+    // NEW: forward marker to whatever tab the streamer is on
+    if (msg.type === "show_marker_on_tab") {
+        browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+            if (tabs.length > 0) {
+                browser.tabs.sendMessage(tabs[0].id, msg).catch((err) => {
+                    console.warn("Could not send marker to active tab:", err);
+                });
+            }
+        });
+    }
 });
 
