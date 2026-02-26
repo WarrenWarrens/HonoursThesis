@@ -310,33 +310,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         // CHANGE: Use 'lastFocusedWindow: true' instead of 'currentWindow: true'
                         // This ensures we find the tab the user is ACTUALLY looking at,
                         // even if they are in a different window from the stream.
-                        browser.tabs.query({active: true, lastFocusedWindow: true}).then((tabs) => {
-                            if (tabs.length > 0) {
-                                const tabId = tabs[0].id;
-                                const messagePayload = {
-                                    type: "SHOW_MARKER",
-                                    data: msg.markerData,
-                                    message: msg.message
-                                };
+                        // Replace the whole browser.tabs.query(...) block with this one line:
 
-                                // Try sending first; if content script isn't loaded, inject it then retry
-                                browser.tabs.sendMessage(tabId, messagePayload).catch(() => {
-                                    browser.tabs.executeScript(tabId, { file: "content_script.js" })
-                                        .then(() => {
-                                            // Small delay to let the script initialize
-                                            setTimeout(() => {
-                                                browser.tabs.sendMessage(tabId, messagePayload).catch(err => {
-                                                    console.error("Still could not send after injection:", err);
-                                                });
-                                            }, 100);
-                                        })
-                                        .catch(injectErr => {
-                                            console.error("Could not inject content script (tab may be restricted):", injectErr);
-                                        });
-                                });
-                            } else {
-                                console.warn("No active tab found.");
-                            }
+                        browser.runtime.sendMessage({
+                            type: "FORWARD_MARKER_TO_TAB",
+                            data: msg.markerData,
+                            message: msg.message
                         });
 
                         // browser.tabs.query({active: true, lastFocusedWindow: true}).then((tabs) => {
