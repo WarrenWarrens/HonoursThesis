@@ -312,18 +312,47 @@ document.addEventListener("DOMContentLoaded", () => {
                         // even if they are in a different window from the stream.
                         browser.tabs.query({active: true, lastFocusedWindow: true}).then((tabs) => {
                             if (tabs.length > 0) {
-                                // Send the marker to the active tab in the focused window
-                                browser.tabs.sendMessage(tabs[0].id, {
+                                const tabId = tabs[0].id;
+                                const messagePayload = {
                                     type: "SHOW_MARKER",
                                     data: msg.markerData,
                                     message: msg.message
-                                }).catch(err => {
-                                    console.error("Could not send to tab. content.js might not be loaded:", err);
+                                };
+
+                                // Try sending first; if content script isn't loaded, inject it then retry
+                                browser.tabs.sendMessage(tabId, messagePayload).catch(() => {
+                                    browser.tabs.executeScript(tabId, { file: "content_script.js" })
+                                        .then(() => {
+                                            // Small delay to let the script initialize
+                                            setTimeout(() => {
+                                                browser.tabs.sendMessage(tabId, messagePayload).catch(err => {
+                                                    console.error("Still could not send after injection:", err);
+                                                });
+                                            }, 100);
+                                        })
+                                        .catch(injectErr => {
+                                            console.error("Could not inject content script (tab may be restricted):", injectErr);
+                                        });
                                 });
                             } else {
-                                console.warn("No active tab found in the last focused window.");
+                                console.warn("No active tab found.");
                             }
                         });
+
+                        // browser.tabs.query({active: true, lastFocusedWindow: true}).then((tabs) => {
+                        //     if (tabs.length > 0) {
+                        //         // Send the marker to the active tab in the focused window
+                        //         browser.tabs.sendMessage(tabs[0].id, {
+                        //             type: "SHOW_MARKER",
+                        //             data: msg.markerData,
+                        //             message: msg.message
+                        //         }).catch(err => {
+                        //             console.error("Could not send to tab. content.js might not be loaded:", err);
+                        //         });
+                        //     } else {
+                        //         console.warn("No active tab found in the last focused window.");
+                        //     }
+                        // });
 
                         // Optional: Uncomment this if you ALSO want it on the preview video
 
