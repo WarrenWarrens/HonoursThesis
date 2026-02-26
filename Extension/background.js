@@ -34,31 +34,82 @@ browser.runtime.onMessage.addListener((msg) => {
         browser.tabs.query({ active: true, lastFocusedWindow: true }).then((tabs) => {
             if (!tabs.length) return;
 
-            const tabId = tabs[0].id;
+            const tab = tabs[0];
+
+            // Skip restricted Firefox internal pages
+            if (!tab.url ||
+                tab.url.startsWith("about:") ||
+                tab.url.startsWith("chrome://") ||
+                tab.url.startsWith("resource://") ||
+                tab.url.startsWith("moz-extension://")) {
+                console.log("Active tab is a restricted page, skipping marker injection:", tab.url);
+                return;
+            }
+
             const payload = {
                 type: "SHOW_MARKER",
                 data: msg.data,
                 message: msg.message
             };
 
-            browser.tabs.sendMessage(tabId, payload).catch(() => {
-                // Content script not loaded yet — inject it, then retry
-                browser.tabs.executeScript(tabId, { file: "content_script.js" })
+            browser.tabs.sendMessage(tab.id, payload).catch(() => {
+                browser.tabs.executeScript(tab.id, { file: "content_script.js" })
                     .then(() => {
                         setTimeout(() => {
-                            browser.tabs.sendMessage(tabId, payload).catch(err => {
+                            browser.tabs.sendMessage(tab.id, payload).catch(err => {
                                 console.error("Still failed after injection:", err);
                             });
                         }, 100);
                     })
                     .catch(err => {
-                        console.error("Injection failed (restricted tab):", err);
+                        console.error("Injection failed:", err);
                     });
             });
         });
     }
 
 });
+//
+// browser.runtime.onMessage.addListener((msg) => {
+//
+//     if (msg.type === "viewer_notify") {
+//         browser.notifications.create({
+//             type: "basic",
+//             iconUrl: "icons/icon.png",
+//             title: "Viewer Interaction",
+//             message: "A viewer pressed the notify button!"
+//         });
+//     }
+//
+//     if (msg.type === "FORWARD_MARKER_TO_TAB") {
+//         browser.tabs.query({ active: true, lastFocusedWindow: true }).then((tabs) => {
+//             if (!tabs.length) return;
+//
+//             const tabId = tabs[0].id;
+//             const payload = {
+//                 type: "SHOW_MARKER",
+//                 data: msg.data,
+//                 message: msg.message
+//             };
+//
+//             browser.tabs.sendMessage(tabId, payload).catch(() => {
+//                 // Content script not loaded yet — inject it, then retry
+//                 browser.tabs.executeScript(tabId, { file: "content_script.js" })
+//                     .then(() => {
+//                         setTimeout(() => {
+//                             browser.tabs.sendMessage(tabId, payload).catch(err => {
+//                                 console.error("Still failed after injection:", err);
+//                             });
+//                         }, 100);
+//                     })
+//                     .catch(err => {
+//                         console.error("Injection failed (restricted tab):", err);
+//                     });
+//             });
+//         });
+//     }
+//
+// });
 //
 // browser.runtime.onMessage.addListener((msg) => {
 //     if (msg.type === "viewer_notify") {
