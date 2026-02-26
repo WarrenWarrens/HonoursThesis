@@ -1,7 +1,13 @@
 const colorMap = {
     red: '#ff0000',
     blue: '#0066ff',
-    green: '#00ff00'
+    yellow: '#ffdd00'   // was green
+};
+
+const markerDuration = {
+    red: 10000,
+    blue: 7000,
+    yellow: 5000
 };
 
 const style = document.createElement('style');
@@ -13,10 +19,21 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Track active markers for the 7-marker limit
+const activeMarkers = [];
+const MAX_MARKERS = 7;
+
 browser.runtime.onMessage.addListener((msg) => {
     if (msg.type === "SHOW_MARKER" && msg.data) {
         const { xPercent, yPercent, color } = msg.data;
         const markerColor = colorMap[color] || '#ff0000';
+        const duration = markerDuration[color] || 5000;
+
+        // If at limit, remove the oldest marker immediately
+        if (activeMarkers.length >= MAX_MARKERS) {
+            const oldest = activeMarkers.shift();
+            oldest.remove();
+        }
 
         const x = (xPercent / 100) * window.innerWidth;
         const y = (yPercent / 100) * window.innerHeight;
@@ -58,11 +75,16 @@ browser.runtime.onMessage.addListener((msg) => {
         }
 
         document.body.appendChild(marker);
+        activeMarkers.push(marker);
 
         setTimeout(() => {
             marker.style.transition = "opacity 0.5s";
             marker.style.opacity = "0";
-            setTimeout(() => marker.remove(), 500);
-        }, 5000);
+            setTimeout(() => {
+                marker.remove();
+                const idx = activeMarkers.indexOf(marker);
+                if (idx > -1) activeMarkers.splice(idx, 1);
+            }, 500);
+        }, duration);
     }
 });

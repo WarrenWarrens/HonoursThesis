@@ -14,12 +14,16 @@ const greenBtn = document.getElementById("greenBtn");
 
 let ws, pc;
 let currentCode = null;
-let selectedColor = null; // null, 'red', 'blue', or 'green'
+
+
+
+
+let selectedColor = null; // null, 'red', 'blue', or 'yellow'
 
 const colorMap = {
     red: '#ff0000',
-    blue: '#4488ff',
-    green: '#ffdd00'
+    blue: '#0066ff',
+    yellow: '#ffdd00'
 };
 
 joinBtn.onclick = () => {
@@ -35,35 +39,31 @@ joinBtn.onclick = () => {
 function setupColorButtons() {
     redBtn.addEventListener("click", () => toggleColor('red'));
     blueBtn.addEventListener("click", () => toggleColor('blue'));
-    greenBtn.addEventListener("click", () => toggleColor('green'));
+    greenBtn.addEventListener("click", () => toggleColor('yellow'));
 }
 
 function toggleColor(color) {
     if (selectedColor === color) {
-        // Deselect if clicking the same color
         selectedColor = null;
         updateButtonStates();
     } else {
-        // Select new color
         selectedColor = color;
         updateButtonStates();
     }
 }
 
 function updateButtonStates() {
-    // Remove 'selected' class from all buttons
-    redBtn.classList.remove('selected');
-    blueBtn.classList.remove('selected');
-    greenBtn.classList.remove('selected');
+    redBtn.style.opacity = selectedColor === 'red' ? '1' : '0.5';
+    redBtn.style.transform = selectedColor === 'red' ? 'scale(1.1)' : 'scale(1)';
+    redBtn.style.boxShadow = selectedColor === 'red' ? '0 0 15px rgba(255, 0, 0, 0.8)' : 'none';
 
-    // Add 'selected' class to the currently selected button
-    if (selectedColor === 'red') {
-        redBtn.classList.add('selected');
-    } else if (selectedColor === 'blue') {
-        blueBtn.classList.add('selected');
-    } else if (selectedColor === 'green') {
-        greenBtn.classList.add('selected');
-    }
+    blueBtn.style.opacity = selectedColor === 'blue' ? '1' : '0.5';
+    blueBtn.style.transform = selectedColor === 'blue' ? 'scale(1.1)' : 'scale(1)';
+    blueBtn.style.boxShadow = selectedColor === 'blue' ? '0 0 15px rgba(0, 102, 255, 0.8)' : 'none';
+
+    greenBtn.style.opacity = selectedColor === 'yellow' ? '1' : '0.5';
+    greenBtn.style.transform = selectedColor === 'yellow' ? 'scale(1.1)' : 'scale(1)';
+    greenBtn.style.boxShadow = selectedColor === 'yellow' ? '0 0 15px rgba(255, 221, 0, 0.8)' : 'none';
 }
 
 function startViewer(code) {
@@ -133,7 +133,7 @@ function startViewer(code) {
             markerData: {
                 xPercent: xPercent,
                 yPercent: yPercent,
-                color: selectedColor
+                color: selectedColor  // will now correctly send 'yellow'
             }
         }));
 

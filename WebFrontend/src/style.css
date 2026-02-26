@@ -186,11 +186,11 @@ video {
 }
 
 /* Green Button - Question Mark Icon */
+/* Change #greenBtn from green to yellow */
 #greenBtn {
-	background-color: #ffdd00;
-	border-color: #000000;
-	color: #000000;
+	background: linear-gradient(135deg, #ffee44 0%, #ffcc00 100%);
 }
+
 
 #greenBtn.selected {
 	background-color: #000000;
