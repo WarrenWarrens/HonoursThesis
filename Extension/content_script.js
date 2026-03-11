@@ -4,6 +4,8 @@ const colorMap = {
     yellow: '#ffdd00'   // was green
 };
 
+const markerIconMap = { red: '🐛', yellow: '❓', blue: '💬' };
+
 const markerDuration = {
     red: 10000,
     blue: 7000,
@@ -39,6 +41,7 @@ browser.runtime.onMessage.addListener((msg) => {
         const y = (yPercent / 100) * window.innerHeight;
 
         const marker = document.createElement("div");
+
         marker.style.cssText = `
             position: fixed;
             left: ${x}px;
@@ -54,6 +57,15 @@ browser.runtime.onMessage.addListener((msg) => {
             transform: translate(-50%, -50%);
             animation: streamer-marker-pulse 0.5s ease-in-out;
         `;
+
+        marker.style.display = "flex";
+        marker.style.alignItems = "center";
+        marker.style.justifyContent = "center";
+
+        const icon = document.createElement("span");
+        icon.textContent = markerIconMap[color] || '●';
+        icon.style.cssText = "font-size: 14px; line-height: 1; pointer-events: none;";
+        marker.appendChild(icon);
 
         if (msg.message) {
             const label = document.createElement("div");

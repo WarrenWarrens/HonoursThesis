@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
         blue: '#0066ff',
         yellow: '#ffdd00'
     };
+    const markerIconMap = { red: '🐛', yellow: '❓', blue: '💬' };
 
     // NEW: per-colour display durations in milliseconds
     const markerDuration = {
@@ -241,6 +242,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Create marker element
         const marker = document.createElement("div");
+        // After creating the marker div and setting its styles, add this before appendChild:
+        marker.style.display = "flex";
+        marker.style.alignItems = "center";
+        marker.style.justifyContent = "center";
+
+        const icon = document.createElement("span");
+        icon.textContent = markerIconMap[color] || '●';
+        icon.style.cssText = "font-size: 14px; line-height: 1; pointer-events: none;";
+        marker.appendChild(icon);
+
         marker.style.position = "absolute";
         marker.style.width = "30px";
         marker.style.height = "30px";

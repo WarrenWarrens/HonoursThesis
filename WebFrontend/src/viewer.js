@@ -25,6 +25,7 @@ const colorMap = {
     blue: '#0066ff',
     yellow: '#ffdd00'
 };
+const markerIconMap = { red: '🐛', yellow: '❓', blue: '💬' };
 
 joinBtn.onclick = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -244,7 +245,8 @@ function startViewer(code) {
     };
 }
 
-// Show temporary visual marker on viewer's side with color
+// NEW
+
 function showLocalMarker(x, y, color) {
     const marker = document.createElement("div");
     marker.className = "local-marker";
@@ -252,9 +254,16 @@ function showLocalMarker(x, y, color) {
     marker.style.left = `${x}px`;
     marker.style.top = `${y}px`;
     marker.style.backgroundColor = colorMap[color];
+    marker.style.display = "flex";
+    marker.style.alignItems = "center";
+    marker.style.justifyContent = "center";
+
+    const icon = document.createElement("span");
+    icon.textContent = markerIconMap[color] || '●';
+    icon.style.cssText = "font-size: 14px; line-height: 1; pointer-events: none;";
+    marker.appendChild(icon);
 
     document.body.appendChild(marker);
-
     // Remove marker after 3 seconds
     setTimeout(() => {
         marker.style.transition = "opacity 0.5s ease";
@@ -262,3 +271,22 @@ function showLocalMarker(x, y, color) {
         setTimeout(() => marker.remove(), 500);
     }, 3000);
 }
+//
+// // Show temporary visual marker on viewer's side with color
+// function showLocalMarker(x, y, color) {
+//     const marker = document.createElement("div");
+//     marker.className = "local-marker";
+//     marker.style.position = "fixed";
+//     marker.style.left = `${x}px`;
+//     marker.style.top = `${y}px`;
+//     marker.style.backgroundColor = colorMap[color];
+//
+//     document.body.appendChild(marker);
+//
+//     // Remove marker after 3 seconds
+//     setTimeout(() => {
+//         marker.style.transition = "opacity 0.5s ease";
+//         marker.style.opacity = "0";
+//         setTimeout(() => marker.remove(), 500);
+//     }, 3000);
+// }
