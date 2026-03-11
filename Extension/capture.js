@@ -10,44 +10,33 @@ document.addEventListener("DOMContentLoaded", () => {
     let offsetX = 0, offsetY = 0, isDragging = false;
 
     // CHANGED: green → yellow with correct hex
-    const colorMap = {
-        red: '#ff0000',
-        blue: '#0066ff',
-        yellow: '#ffdd00'
-    };
-    const markerIconMap = { red: '🐛', yellow: '❓', blue: '💬' };
 
-    // NEW: per-colour display durations in milliseconds
-    const markerDuration = {
-        red: 10000,
-        blue: 7000,
-        yellow: 5000
+    const colorMap = {
+        red:    '#ff0000',
+        blue:   '#0066ff',
+        yellow: '#ffdd00',
+        green:  '#00cc44'
     };
+
+    const markerIconMap = {
+        red:    '🐛',
+        blue:   '💬',
+        yellow: '❓',
+        green:  '✓'
+    };
+
+    const markerDuration = {
+        red:    10000,
+        blue:   7000,
+        yellow: 5000,
+        green:  5000
+    };
+
 
     // NEW: track active markers to enforce the 7-marker limit
     const activeMarkers = [];
     const MAX_MARKERS = 7;
 
-    // Make overlay draggable
-    if (overlayHeader && overlay) {
-        overlayHeader.addEventListener("mousedown", (e) => {
-            isDragging = true;
-            offsetX = e.clientX - overlay.offsetLeft;
-            offsetY = e.clientY - overlay.offsetTop;
-            overlay.style.cursor = "grabbing";
-        });
-
-        document.addEventListener("mouseup", () => {
-            isDragging = false;
-            if (overlay) overlay.style.cursor = "grab";
-        });
-
-        document.addEventListener("mousemove", (e) => {
-            if (!isDragging || !overlay) return;
-            overlay.style.left = (e.clientX - offsetX) + "px";
-            overlay.style.top = (e.clientY - offsetY) + "px";
-        });
-    }
 
     startBtn.addEventListener("click", async () => {
         try {

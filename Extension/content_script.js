@@ -1,16 +1,21 @@
 const colorMap = {
     red: '#ff0000',
     blue: '#0066ff',
-    yellow: '#ffdd00'   // was green
+    yellow: '#ffdd00',
+    green: '#00cc44'    // ← add
 };
-
-const markerIconMap = { red: '🐛', yellow: '❓', blue: '💬' };
 
 const markerDuration = {
     red: 10000,
     blue: 7000,
-    yellow: 5000
+    yellow: 5000,
+    green: 5000         // ← add
 };
+
+
+
+const markerIconMap = { red: '🐛', yellow: '❓', blue: '💬' };
+
 
 const style = document.createElement('style');
 style.textContent = `
