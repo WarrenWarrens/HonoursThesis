@@ -142,35 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const pc = pcs.get(msg.id);
                 if (pc) { pc.close(); pcs.delete(msg.id); }
 
-                } else if (msg.type === "viewerMessage") {
-                    console.log("Viewer message received:", msg);
-
-                    if (msg.markerData) {
-                        const color = msg.markerData.color || 'red';
-                        showMarkerOnVideo(msg.markerData.xPercent, msg.markerData.yPercent, msg.message, color);
-                        browser.runtime.sendMessage({ type: "FORWARD_MARKER_TO_TAB", ... });
-                        // Show on the preview video (stream tab)
-                        showMarkerOnVideo(
-                            msg.markerData.xPercent,
-                            msg.markerData.yPercent,
-                            msg.message,
-                            color
-                        );
-                        const markerName = viewerNames.get(msg.id) || msg.viewerName || `Unknown`;
-                        addLogEntry(`${markerName} placed a ${color} marker`, "marker");
-
-                        // Forward to whichever tab the host is actively viewing
-                        browser.runtime.sendMessage({
-                            type: "FORWARD_MARKER_TO_TAB",
-                            data: msg.markerData,
-                            message: msg.message
-                        });
-
-                    } else {
-                        // Regular text message
-                        showMessageOverlay(msg.message);
-                    }
                 }
+
             });
 
             stream.getVideoTracks()[0].onended = stopCapture;
@@ -361,78 +334,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }, duration);
     }
 
-    // UPDATED: uses per-colour duration and enforces 7-marker limit
-    // function showMarkerOnVideo(xPercent, yPercent, message, color) {
-    //     const markerColor = colorMap[color] || '#ff0000';
-    //     const duration = markerDuration[color] || 5000;
-    //
-    //     // Enforce marker limit — remove oldest if at cap
-    //     if (activeMarkers.length >= MAX_MARKERS) {
-    //         const oldest = activeMarkers.shift();
-    //         oldest.remove();
-    //     }
-    //
-    //     // Create marker element
-    //     const marker = document.createElement("div");
-    //     // After creating the marker div and setting its styles, add this before appendChild:
-    //     marker.style.display = "flex";
-    //     marker.style.alignItems = "center";
-    //     marker.style.justifyContent = "center";
-    //
-    //     const icon = document.createElement("span");
-    //     icon.textContent = markerIconMap[color] || '●';
-    //     icon.style.cssText = "font-size: 14px; line-height: 1; pointer-events: none;";
-    //     marker.appendChild(icon);
-    //
-    //     marker.style.position = "absolute";
-    //     marker.style.width = "30px";
-    //     marker.style.height = "30px";
-    //     marker.style.backgroundColor = markerColor;
-    //     marker.style.borderRadius = "50%";
-    //     marker.style.border = "3px solid white";
-    //     marker.style.boxShadow = `0 0 15px ${markerColor}`;
-    //     marker.style.zIndex = "9998";
-    //     marker.style.pointerEvents = "none";
-    //
-    //     // Calculate position based on video preview dimensions
-    //     const videoRect = videoEl.getBoundingClientRect();
-    //     const markerX = (xPercent / 100) * videoRect.width;
-    //     const markerY = (yPercent / 100) * videoRect.height;
-    //
-    //     marker.style.left = `${markerX}px`;
-    //     marker.style.top = `${markerY}px`;
-    //     marker.style.transform = "translate(-50%, -50%)";
-    //
-    //     // Add to body positioned relative to video
-    //     document.body.appendChild(marker);
-    //
-    //     // Adjust position to be relative to video element on page
-    //     const absoluteX = videoRect.left + markerX;
-    //     const absoluteY = videoRect.top + markerY;
-    //     marker.style.left = `${absoluteX}px`;
-    //     marker.style.top = `${absoluteY}px`;
-    //     marker.style.position = "fixed";
-    //
-    //     // Show message in overlay
-    //     showMessageOverlay(message);
-    //
-    //     // Add pulsing animation
-    //     marker.style.animation = "pulse 0.5s ease-in-out";
-    //
-    //     // Track this marker
-    //     activeMarkers.push(marker);
-    //
-    //     // Remove after colour-specific duration
-    //     setTimeout(() => {
-    //         marker.style.transition = "opacity 0.5s";
-    //         marker.style.opacity = "0";
-    //         setTimeout(() => {
-    //             marker.remove();
-    //             const idx = activeMarkers.indexOf(marker);
-    //             if (idx > -1) activeMarkers.splice(idx, 1);
-    //         }, 500);
-    //     }, duration);
-    // }
 
     // Add CSS animation for marker pulse
     const style = document.createElement('style');
