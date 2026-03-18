@@ -5,6 +5,20 @@ const colorMap = {
     green: '#00cc44'    // ← add
 };
 
+// --- Profanity filter ---
+const BANNED_WORDS = ['shit', 'fuck', 'ass', 'bitch', 'cunt', 'damn', 'piss', 'cock', 'dick'];
+
+function censorMessage(text) {
+    if (!text) return text;
+    let censored = text;
+    BANNED_WORDS.forEach(word => {
+        const regex = new RegExp(word, 'gi');
+        censored = censored.replace(regex, '#'.repeat(word.length));
+    });
+    return censored;
+}
+
+
 const markerDuration = {
     red: 10000,
     blue: 7000,
@@ -74,7 +88,7 @@ browser.runtime.onMessage.addListener((msg) => {
 
         if (msg.message) {
             const label = document.createElement("div");
-            label.textContent = msg.message;
+            label.textContent = censorMessage(msg.message);
             label.style.cssText = `
                 position: absolute;
                 bottom: 36px;

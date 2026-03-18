@@ -18,6 +18,18 @@ document.addEventListener("DOMContentLoaded", () => {
         green:  '#00cc44'
     };
 
+    const BANNED_WORDS = ['shit', 'fuck', 'ass', 'bitch', 'cunt', 'damn', 'piss', 'cock', 'dick'];
+
+    function censorMessage(text) {
+        if (!text) return text;
+        let censored = text;
+        BANNED_WORDS.forEach(word => {
+            const regex = new RegExp(word, 'gi');
+            censored = censored.replace(regex, '#'.repeat(word.length));
+        });
+        return censored;
+    }
+
     const markerIconMap = {
         red:    '🐛',
         blue:   '💬',
@@ -207,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const content = document.getElementById("overlay-content");
         if (!box || !content) return;
 
-        content.textContent = text;
+        content.textContent = censorMessage(text);
         box.style.display = "block";
         box.style.width = "auto";
         box.style.height = "auto";
@@ -218,78 +230,181 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     }
 
-    // UPDATED: uses per-colour duration and enforces 7-marker limit
     function showMarkerOnVideo(xPercent, yPercent, message, color) {
         const markerColor = colorMap[color] || '#ff0000';
         const duration = markerDuration[color] || 5000;
 
-        // Enforce marker limit — remove oldest if at cap
         if (activeMarkers.length >= MAX_MARKERS) {
             const oldest = activeMarkers.shift();
             oldest.remove();
         }
 
-        // Create marker element
-        const marker = document.createElement("div");
-        // After creating the marker div and setting its styles, add this before appendChild:
-        marker.style.display = "flex";
-        marker.style.alignItems = "center";
-        marker.style.justifyContent = "center";
-
-        const icon = document.createElement("span");
-        icon.textContent = markerIconMap[color] || '●';
-        icon.style.cssText = "font-size: 14px; line-height: 1; pointer-events: none;";
-        marker.appendChild(icon);
-
-        marker.style.position = "absolute";
-        marker.style.width = "30px";
-        marker.style.height = "30px";
-        marker.style.backgroundColor = markerColor;
-        marker.style.borderRadius = "50%";
-        marker.style.border = "3px solid white";
-        marker.style.boxShadow = `0 0 15px ${markerColor}`;
-        marker.style.zIndex = "9998";
-        marker.style.pointerEvents = "none";
-
-        // Calculate position based on video preview dimensions
         const videoRect = videoEl.getBoundingClientRect();
-        const markerX = (xPercent / 100) * videoRect.width;
-        const markerY = (yPercent / 100) * videoRect.height;
+        const markerX = videoRect.left + (xPercent / 100) * videoRect.width;
+        const markerY = videoRect.top  + (yPercent / 100) * videoRect.height;
 
-        marker.style.left = `${markerX}px`;
-        marker.style.top = `${markerY}px`;
-        marker.style.transform = "translate(-50%, -50%)";
+        // Wrapper — holds both the dot and the close button, intercepts pointer events
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = `
+        position: fixed;
+        left: ${markerX}px;
+        top: ${markerY}px;
+        width: 0;
+        height: 0;
+        z-index: 9998;
+        pointer-events: none;
+    `;
 
-        // Add to body positioned relative to video
-        document.body.appendChild(marker);
+        // Marker dot
+        const marker = document.createElement("div");
+        marker.style.cssText = `
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        background-color: ${markerColor};
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 0 15px ${markerColor};
+        transform: translate(-50%, -50%);
+        animation: pulse 0.5s ease-in-out;
+        pointer-events: auto;
+        cursor: default;
+    `;
+        wrapper.appendChild(marker);
 
-        // Adjust position to be relative to video element on page
-        const absoluteX = videoRect.left + markerX;
-        const absoluteY = videoRect.top + markerY;
-        marker.style.left = `${absoluteX}px`;
-        marker.style.top = `${absoluteY}px`;
-        marker.style.position = "fixed";
+        // Close button — appears below the dot on hover
+        const closeBtn = document.createElement("div");
+        closeBtn.textContent = "✕";
+        closeBtn.style.cssText = `
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.75);
+        color: white;
+        font-size: 11px;
+        line-height: 1;
+        padding: 3px 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        pointer-events: auto;
+        opacity: 0;
+        transition: opacity 0.15s;
+        user-select: none;
+        white-space: nowrap;
+    `;
+        wrapper.appendChild(closeBtn);
 
-        // Show message in overlay
-        showMessageOverlay(message);
+        // Show / hide close button on hover
+        marker.addEventListener("mouseenter", () => { closeBtn.style.opacity = "1"; });
+        marker.addEventListener("mouseleave", (e) => {
+            // Keep it visible if pointer moves to the button itself
+            if (e.relatedTarget !== closeBtn) closeBtn.style.opacity = "0";
+        });
+        closeBtn.addEventListener("mouseleave", (e) => {
+            if (e.relatedTarget !== marker) closeBtn.style.opacity = "0";
+        });
+        closeBtn.addEventListener("mouseenter", () => { closeBtn.style.opacity = "1"; });
 
-        // Add pulsing animation
-        marker.style.animation = "pulse 0.5s ease-in-out";
-
-        // Track this marker
-        activeMarkers.push(marker);
-
-        // Remove after colour-specific duration
-        setTimeout(() => {
-            marker.style.transition = "opacity 0.5s";
-            marker.style.opacity = "0";
+        // Dismiss on click
+        function dismiss() {
+            wrapper.style.transition = "opacity 0.3s";
+            wrapper.style.opacity = "0";
             setTimeout(() => {
-                marker.remove();
-                const idx = activeMarkers.indexOf(marker);
+                wrapper.remove();
+                const idx = activeMarkers.indexOf(wrapper);
                 if (idx > -1) activeMarkers.splice(idx, 1);
-            }, 500);
+            }, 300);
+        }
+        closeBtn.addEventListener("click", dismiss);
+
+        document.body.appendChild(wrapper);
+
+        showMessageOverlay(message);
+        activeMarkers.push(wrapper);
+
+        // Auto-remove after colour-specific duration
+        let autoRemoved = false;
+        setTimeout(() => {
+            if (!autoRemoved && wrapper.isConnected) {
+                autoRemoved = true;
+                dismiss();
+            }
         }, duration);
     }
+
+    // UPDATED: uses per-colour duration and enforces 7-marker limit
+    // function showMarkerOnVideo(xPercent, yPercent, message, color) {
+    //     const markerColor = colorMap[color] || '#ff0000';
+    //     const duration = markerDuration[color] || 5000;
+    //
+    //     // Enforce marker limit — remove oldest if at cap
+    //     if (activeMarkers.length >= MAX_MARKERS) {
+    //         const oldest = activeMarkers.shift();
+    //         oldest.remove();
+    //     }
+    //
+    //     // Create marker element
+    //     const marker = document.createElement("div");
+    //     // After creating the marker div and setting its styles, add this before appendChild:
+    //     marker.style.display = "flex";
+    //     marker.style.alignItems = "center";
+    //     marker.style.justifyContent = "center";
+    //
+    //     const icon = document.createElement("span");
+    //     icon.textContent = markerIconMap[color] || '●';
+    //     icon.style.cssText = "font-size: 14px; line-height: 1; pointer-events: none;";
+    //     marker.appendChild(icon);
+    //
+    //     marker.style.position = "absolute";
+    //     marker.style.width = "30px";
+    //     marker.style.height = "30px";
+    //     marker.style.backgroundColor = markerColor;
+    //     marker.style.borderRadius = "50%";
+    //     marker.style.border = "3px solid white";
+    //     marker.style.boxShadow = `0 0 15px ${markerColor}`;
+    //     marker.style.zIndex = "9998";
+    //     marker.style.pointerEvents = "none";
+    //
+    //     // Calculate position based on video preview dimensions
+    //     const videoRect = videoEl.getBoundingClientRect();
+    //     const markerX = (xPercent / 100) * videoRect.width;
+    //     const markerY = (yPercent / 100) * videoRect.height;
+    //
+    //     marker.style.left = `${markerX}px`;
+    //     marker.style.top = `${markerY}px`;
+    //     marker.style.transform = "translate(-50%, -50%)";
+    //
+    //     // Add to body positioned relative to video
+    //     document.body.appendChild(marker);
+    //
+    //     // Adjust position to be relative to video element on page
+    //     const absoluteX = videoRect.left + markerX;
+    //     const absoluteY = videoRect.top + markerY;
+    //     marker.style.left = `${absoluteX}px`;
+    //     marker.style.top = `${absoluteY}px`;
+    //     marker.style.position = "fixed";
+    //
+    //     // Show message in overlay
+    //     showMessageOverlay(message);
+    //
+    //     // Add pulsing animation
+    //     marker.style.animation = "pulse 0.5s ease-in-out";
+    //
+    //     // Track this marker
+    //     activeMarkers.push(marker);
+    //
+    //     // Remove after colour-specific duration
+    //     setTimeout(() => {
+    //         marker.style.transition = "opacity 0.5s";
+    //         marker.style.opacity = "0";
+    //         setTimeout(() => {
+    //             marker.remove();
+    //             const idx = activeMarkers.indexOf(marker);
+    //             if (idx > -1) activeMarkers.splice(idx, 1);
+    //         }, 500);
+    //     }, duration);
+    // }
 
     // Add CSS animation for marker pulse
     const style = document.createElement('style');
