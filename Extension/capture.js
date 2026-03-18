@@ -49,6 +49,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeMarkers = [];
     const MAX_MARKERS = 7;
 
+    // Map viewer id → assigned name
+    const viewerNames = new Map();
+
+    function addLogEntry(text, type) {
+        const entriesEl = document.getElementById("activity-log-entries");
+        if (!entriesEl) return;
+
+        const now = new Date();
+        const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        entry.innerHTML = `<span class="log-time">[${time}]</span><span class="log-${type}">${text}</span>`;
+
+        entriesEl.appendChild(entry);
+        // Keep scrolled to bottom
+        entriesEl.scrollTop = entriesEl.scrollHeight;
+    }
+
 
     startBtn.addEventListener("click", async () => {
         try {
@@ -95,8 +114,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
                     });
 
-                } else if (msg.type === "viewer-joined") {
+                }// AFTER
+                else if (msg.type === "viewer-joined") {
+                    const name = msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
+                    viewerNames.set(msg.id, name);
+                    addLogEntry(`${name} joined`, "join");
                     await createOffer(msg.id);
+
                 } else if (msg.type === "answer") {
                     const pc = pcs.get(msg.id);
                     if (pc) {
@@ -111,18 +135,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else {
                         console.warn("broadcaster: candidate for unknown pc id", msg.id);
                     }
-                } else if (msg.type === "viewer-left") {
-                    const pc = pcs.get(msg.id);
-                    if (pc) {
-                        pc.close();
-                        pcs.delete(msg.id);
-                    }
+                }  else if (msg.type === "viewer-left") {
+                const name = viewerNames.get(msg.id) || msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
+                viewerNames.delete(msg.id);
+                addLogEntry(`${name} left`, "leave");
+                const pc = pcs.get(msg.id);
+                if (pc) { pc.close(); pcs.delete(msg.id); }
+
                 } else if (msg.type === "viewerMessage") {
                     console.log("Viewer message received:", msg);
 
                     if (msg.markerData) {
                         const color = msg.markerData.color || 'red';
-
+                        showMarkerOnVideo(msg.markerData.xPercent, msg.markerData.yPercent, msg.message, color);
+                        browser.runtime.sendMessage({ type: "FORWARD_MARKER_TO_TAB", ... });
                         // Show on the preview video (stream tab)
                         showMarkerOnVideo(
                             msg.markerData.xPercent,
@@ -130,6 +156,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             msg.message,
                             color
                         );
+                        const markerName = viewerNames.get(msg.id) || msg.viewerName || `Unknown`;
+                        addLogEntry(`${markerName} placed a ${color} marker`, "marker");
 
                         // Forward to whichever tab the host is actively viewing
                         browser.runtime.sendMessage({

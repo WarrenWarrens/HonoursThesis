@@ -23,6 +23,15 @@ function generateRoomCode() {
     return code;
 }
 
+const NAME_COLORS  = ['Red','Blue','Green','Purple','Orange','Pink','Cyan','Gold','Silver','Teal','Violet','Crimson'];
+const NAME_ANIMALS = ['Fox','Wolf','Bear','Eagle','Shark','Tiger','Panda','Otter','Raven','Lynx','Hawk','Seal','Owl','Deer'];
+
+function generateViewerName() {
+    const color  = NAME_COLORS [Math.floor(Math.random() * NAME_COLORS.length)];
+    const animal = NAME_ANIMALS[Math.floor(Math.random() * NAME_ANIMALS.length)];
+    return `${color} ${animal}`;
+}
+
 wss.on("connection", (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const role = url.searchParams.get("role");
@@ -42,9 +51,9 @@ wss.on("connection", (ws, req) => {
             console.log(`Broadcaster with code ${roomCode} disconnected`);
             const entry = broadcasters.get(roomCode);
             if (entry) {
-                for (const [, viewerWs] of entry.viewers) {
-                    if (viewerWs.readyState === 1) {
-                        viewerWs.send(JSON.stringify({ type: "broadcaster-disconnected" }));
+                for (const [, viewer] of entry.viewers) {
+                    if (viewer.ws.readyState === 1) {
+                        viewer.ws.send(JSON.stringify({ type: "broadcaster-disconnected" }));
                     }
                 }
                 broadcasters.delete(roomCode);
@@ -59,14 +68,15 @@ wss.on("connection", (ws, req) => {
             // Forward messages to specific viewer
             if (msg.id && msg.type !== "room-code") {
                 const room = broadcasters.get(roomCode);
-                const target = room?.viewers.get(msg.id);
 
+                const viewer = room?.viewers.get(msg.id);
+                const target = viewer?.ws;
                 if (target && target.readyState === 1) {
                     target.send(JSON.stringify(msg));
-                    console.log(`server: forwarded ${msg.type} to viewer ${msg.id} in room ${roomCode}`);
                 } else {
                     console.warn(`server: target viewer ${msg.id} not found/ready in room ${roomCode}`);
                 }
+
             }
         });
     } // <-- This closes the "if (role === 'broadcaster')" block
@@ -80,12 +90,13 @@ wss.on("connection", (ws, req) => {
         }
 
         const id = randomUUID();
-        room.viewers.set(id, ws);
-        console.log(`Viewer joined room ${code} (${id}) -- stored in room.viewers`);
+        const viewerName = generateViewerName();
+        room.viewers.set(id, { ws, name: viewerName });
+        room.ws.send(JSON.stringify({ type: "viewer-joined", id, viewerName }));
 
+        console.log(`Viewer joined room ${code} (${id}) -- stored in room.viewers`);
         console.log(`Room ${code} viewer count: ${room.viewers.size}`);
 
-        room.ws.send(JSON.stringify({ type: "viewer-joined", id }));
 
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
@@ -98,10 +109,8 @@ wss.on("connection", (ws, req) => {
 
                 if (room.ws && room.ws.readyState === 1) {
                     // Add the viewer ID to the message and forward EVERYTHING
-                    const messageToSend = {
-                        ...msg,  // Spread all properties from original message
-                        id       // Add viewer ID
-                    };
+                    const messageToSend = { ...msg, id, viewerName };
+
 
                     console.log(`server: sending to broadcaster:`, JSON.stringify(messageToSend, null, 2));
                     room.ws.send(JSON.stringify(messageToSend));
@@ -121,12 +130,12 @@ wss.on("connection", (ws, req) => {
         });
 
         ws.on("close", () => {
-            console.log(`Viewer ${id} disconnected from room ${code}`);
             room.viewers.delete(id);
             if (room.ws && room.ws.readyState === 1) {
-                room.ws.send(JSON.stringify({ type: "viewer-left", id }));
+                room.ws.send(JSON.stringify({ type: "viewer-left", id, viewerName }));
             }
         });
+
     } // <-- This closes the "if (role === 'viewer')" block
 
 }); // <-- This closes the wss.on("connection") handler

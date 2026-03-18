@@ -56,8 +56,9 @@ browser.runtime.onMessage.addListener((msg) => {
             oldest.remove();
         }
 
-        const x = (xPercent / 100) * window.innerWidth;
-        const y = (yPercent / 100) * window.innerHeight;
+        const chromeTop = window.screenY + (window.outerHeight - window.innerHeight);
+        const x = (xPercent / 100) * screen.width  - window.screenX;
+        const y = (yPercent / 100) * screen.height - chromeTop;
 
         const marker = document.createElement("div");
 
