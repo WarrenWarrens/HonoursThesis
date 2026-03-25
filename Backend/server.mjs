@@ -1,8 +1,156 @@
-// server.mjs - PROPERLY FIXED VERSION
+// // server.mjs - PROPERLY FIXED VERSION
+// import express from "express";
+// import http from "http";
+// import { WebSocketServer } from "ws";
+//
+// import path from "path";
+// import { fileURLToPath } from "url";
+// import { randomUUID } from "crypto";
+//
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+//
+// const app = express();
+// const server = http.createServer(app);
+// const wss = new WebSocketServer({ server });
+//
+// const broadcasters = new Map();
+//
+// function generateRoomCode() {
+//     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+//     let code = "";
+//     for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+//     return code;
+// }
+//
+// const NAME_COLORS  = ['Red','Blue','Green','Purple','Orange','Pink','Cyan','Gold','Silver','Teal','Violet','Crimson'];
+// const NAME_ANIMALS = ['Fox','Wolf','Bear','Eagle','Shark','Tiger','Panda','Otter','Raven','Lynx','Hawk','Seal','Owl','Deer'];
+//
+// function generateViewerName() {
+//     const color  = NAME_COLORS [Math.floor(Math.random() * NAME_COLORS.length)];
+//     const animal = NAME_ANIMALS[Math.floor(Math.random() * NAME_ANIMALS.length)];
+//     return `${color} ${animal}`;
+// }
+//
+// wss.on("connection", (ws, req) => {
+//     const url = new URL(req.url, `http://${req.headers.host}`);
+//     const role = url.searchParams.get("role");
+//     const code = url.searchParams.get("code");
+//
+//     if (role === "broadcaster") {
+//         const roomCode = generateRoomCode();
+//         broadcasters.set(roomCode, { ws, viewers: new Map() });
+//
+//         ws.roomCode = roomCode;
+//
+//         console.log(`Broadcaster started stream with code ${roomCode}`);
+//
+//         ws.send(JSON.stringify({ type: "room-code", code: roomCode }));
+//
+//         ws.on("close", () => {
+//             console.log(`Broadcaster with code ${roomCode} disconnected`);
+//             const entry = broadcasters.get(roomCode);
+//             if (entry) {
+//                 for (const [, viewer] of entry.viewers) {
+//                     if (viewer.ws.readyState === 1) {
+//                         viewer.ws.send(JSON.stringify({ type: "broadcaster-disconnected" }));
+//                     }
+//                 }
+//                 broadcasters.delete(roomCode);
+//             }
+//         });
+//
+//         // Handle messages from broadcaster to viewers
+//         ws.on("message", (message) => {
+//             const msg = JSON.parse(message);
+//             console.log("server: received message from broadcaster:", msg.type, msg);
+//
+//             // Forward messages to specific viewer
+//             if (msg.id && msg.type !== "room-code") {
+//                 const room = broadcasters.get(roomCode);
+//
+//                 const viewer = room?.viewers.get(msg.id);
+//                 const target = viewer?.ws;
+//                 if (target && target.readyState === 1) {
+//                     target.send(JSON.stringify(msg));
+//                 } else {
+//                     console.warn(`server: target viewer ${msg.id} not found/ready in room ${roomCode}`);
+//                 }
+//
+//             }
+//         });
+//     } // <-- This closes the "if (role === 'broadcaster')" block
+//
+//     if (role === "viewer" && code) {
+//         const room = broadcasters.get(code.toUpperCase());
+//         if (!room) {
+//             ws.send(JSON.stringify({ type: "error", message: "Invalid or expired code." }));
+//             ws.close();
+//             return;
+//         }
+//
+//         const id = randomUUID();
+//         const viewerName = generateViewerName();
+//         room.viewers.set(id, { ws, name: viewerName });
+//         room.ws.send(JSON.stringify({ type: "viewer-joined", id, viewerName }));
+//
+//         console.log(`Viewer joined room ${code} (${id}) -- stored in room.viewers`);
+//         console.log(`Room ${code} viewer count: ${room.viewers.size}`);
+//
+//
+//         ws.on("message", (message) => {
+//             const msg = JSON.parse(message);
+//             console.log(`server: received message from viewer ${id} in ${code}:`, msg.type);
+//             console.log(`server: full message data:`, JSON.stringify(msg, null, 2));
+//
+//             // CRITICAL FIX: Forward the ENTIRE message object to broadcaster
+//             if (msg.type === "viewerMessage" || msg.type === "viewer_notify") {
+//                 console.log(`server: forwarding viewer message to broadcaster for room ${code}`);
+//
+//                 if (room.ws && room.ws.readyState === 1) {
+//                     // Add the viewer ID to the message and forward EVERYTHING
+//                     const messageToSend = { ...msg, id, viewerName };
+//
+//
+//                     console.log(`server: sending to broadcaster:`, JSON.stringify(messageToSend, null, 2));
+//                     room.ws.send(JSON.stringify(messageToSend));
+//                 } else {
+//                     console.warn(`server: broadcaster for room ${code} not connected`);
+//                 }
+//                 return;
+//             }
+//
+//             // For other message types (answer, candidate), forward to broadcaster
+//             if (room.ws && room.ws.readyState === 1) {
+//                 room.ws.send(JSON.stringify({ ...msg, id }));
+//                 console.log(`server: relayed viewer ${id} -> broadcaster: ${msg.type}`);
+//             } else {
+//                 console.warn(`server: cannot relay viewer ${id} -> broadcaster: broadcaster not ready`);
+//             }
+//         });
+//
+//         ws.on("close", () => {
+//             room.viewers.delete(id);
+//             if (room.ws && room.ws.readyState === 1) {
+//                 room.ws.send(JSON.stringify({ type: "viewer-left", id, viewerName }));
+//             }
+//         });
+//
+//     } // <-- This closes the "if (role === 'viewer')" block
+//
+// }); // <-- This closes the wss.on("connection") handler
+//
+// app.use(express.static(path.join(__dirname, "Viewer")));
+//
+// const PORT = process.env.PORT || 8080;
+// server.listen(PORT, () => {
+//     console.log(`Server running → http://localhost:${PORT}`);
+// });
+
+// server.mjs
 import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
-
 import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
@@ -23,6 +171,7 @@ function generateRoomCode() {
     return code;
 }
 
+// ── Name generator ────────────────────────────────────────────────────────────
 const NAME_COLORS  = ['Red','Blue','Green','Purple','Orange','Pink','Cyan','Gold','Silver','Teal','Violet','Crimson'];
 const NAME_ANIMALS = ['Fox','Wolf','Bear','Eagle','Shark','Tiger','Panda','Otter','Raven','Lynx','Hawk','Seal','Owl','Deer'];
 
@@ -31,20 +180,19 @@ function generateViewerName() {
     const animal = NAME_ANIMALS[Math.floor(Math.random() * NAME_ANIMALS.length)];
     return `${color} ${animal}`;
 }
+// ─────────────────────────────────────────────────────────────────────────────
 
 wss.on("connection", (ws, req) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
+    const url  = new URL(req.url, `http://${req.headers.host}`);
     const role = url.searchParams.get("role");
     const code = url.searchParams.get("code");
 
     if (role === "broadcaster") {
         const roomCode = generateRoomCode();
         broadcasters.set(roomCode, { ws, viewers: new Map() });
-
         ws.roomCode = roomCode;
 
         console.log(`Broadcaster started stream with code ${roomCode}`);
-
         ws.send(JSON.stringify({ type: "room-code", code: roomCode }));
 
         ws.on("close", () => {
@@ -60,26 +208,24 @@ wss.on("connection", (ws, req) => {
             }
         });
 
-        // Handle messages from broadcaster to viewers
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
             console.log("server: received message from broadcaster:", msg.type, msg);
 
-            // Forward messages to specific viewer
             if (msg.id && msg.type !== "room-code") {
-                const room = broadcasters.get(roomCode);
-
+                const room   = broadcasters.get(roomCode);
                 const viewer = room?.viewers.get(msg.id);
-                const target = viewer?.ws;
+                const target = viewer?.ws;               // ← unwrap {ws, name}
+
                 if (target && target.readyState === 1) {
                     target.send(JSON.stringify(msg));
+                    console.log(`server: forwarded ${msg.type} to viewer ${msg.id}`);
                 } else {
-                    console.warn(`server: target viewer ${msg.id} not found/ready in room ${roomCode}`);
+                    console.warn(`server: target viewer ${msg.id} not found/ready`);
                 }
-
             }
         });
-    } // <-- This closes the "if (role === 'broadcaster')" block
+    }
 
     if (role === "viewer" && code) {
         const room = broadcasters.get(code.toUpperCase());
@@ -89,30 +235,27 @@ wss.on("connection", (ws, req) => {
             return;
         }
 
-        const id = randomUUID();
-        const viewerName = generateViewerName();
+        const id          = randomUUID();
+        const viewerName  = generateViewerName();   // ← defined BEFORE it's used below
         room.viewers.set(id, { ws, name: viewerName });
-        room.ws.send(JSON.stringify({ type: "viewer-joined", id, viewerName }));
 
-        console.log(`Viewer joined room ${code} (${id}) -- stored in room.viewers`);
+        console.log(`Viewer "${viewerName}" joined room ${code} (${id})`);
         console.log(`Room ${code} viewer count: ${room.viewers.size}`);
 
+        room.ws.send(JSON.stringify({ type: "viewer-joined", id, viewerName }));
 
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
-            console.log(`server: received message from viewer ${id} in ${code}:`, msg.type);
-            console.log(`server: full message data:`, JSON.stringify(msg, null, 2));
+            console.log(`server: received message from viewer ${id} (${viewerName}):`, msg.type);
 
-            // CRITICAL FIX: Forward the ENTIRE message object to broadcaster
             if (msg.type === "viewerMessage" || msg.type === "viewer_notify") {
-                console.log(`server: forwarding viewer message to broadcaster for room ${code}`);
-
                 if (room.ws && room.ws.readyState === 1) {
-                    // Add the viewer ID to the message and forward EVERYTHING
-                    const messageToSend = { ...msg, id, viewerName };
-
-
-                    console.log(`server: sending to broadcaster:`, JSON.stringify(messageToSend, null, 2));
+                    const messageToSend = {
+                        ...msg,         // preserves markerData, message, etc.
+                        id,
+                        viewerName      // ← now safely defined
+                    };
+                    console.log(`server: forwarding to broadcaster:`, JSON.stringify(messageToSend, null, 2));
                     room.ws.send(JSON.stringify(messageToSend));
                 } else {
                     console.warn(`server: broadcaster for room ${code} not connected`);
@@ -120,25 +263,21 @@ wss.on("connection", (ws, req) => {
                 return;
             }
 
-            // For other message types (answer, candidate), forward to broadcaster
+            // WebRTC signalling (answer, candidate)
             if (room.ws && room.ws.readyState === 1) {
                 room.ws.send(JSON.stringify({ ...msg, id }));
-                console.log(`server: relayed viewer ${id} -> broadcaster: ${msg.type}`);
-            } else {
-                console.warn(`server: cannot relay viewer ${id} -> broadcaster: broadcaster not ready`);
             }
         });
 
         ws.on("close", () => {
+            console.log(`Viewer "${viewerName}" (${id}) disconnected from room ${code}`);
             room.viewers.delete(id);
             if (room.ws && room.ws.readyState === 1) {
                 room.ws.send(JSON.stringify({ type: "viewer-left", id, viewerName }));
             }
         });
-
-    } // <-- This closes the "if (role === 'viewer')" block
-
-}); // <-- This closes the wss.on("connection") handler
+    }
+});
 
 app.use(express.static(path.join(__dirname, "Viewer")));
 
