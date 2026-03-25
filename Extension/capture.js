@@ -135,14 +135,34 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else {
                         console.warn("broadcaster: candidate for unknown pc id", msg.id);
                     }
-                }  else if (msg.type === "viewer-left") {
-                const name = viewerNames.get(msg.id) || msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
-                viewerNames.delete(msg.id);
-                addLogEntry(`${name} left`, "leave");
-                const pc = pcs.get(msg.id);
-                if (pc) { pc.close(); pcs.delete(msg.id); }
+                }
+
+                 else if (msg.type === "viewer-left")
+                 {
+                    const name = viewerNames.get(msg.id) || msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
+                    viewerNames.delete(msg.id);
+                    addLogEntry(`${name} left`, "leave");
+                    const pc = pcs.get(msg.id);
+                    if (pc) { pc.close(); pcs.delete(msg.id); }
 
                 }
+                 else if (msg.type === "viewerMessage" && msg.markerData)
+                {
+                    const name = viewerNames.get(msg.id) || msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
+                    const { xPercent, yPercent, color } = msg.markerData;
+                    const markerMsg = msg.message || '';
+
+                    showMarkerOnVideo(xPercent, yPercent, markerMsg, color);
+                    addLogEntry(`${name}: ${color} marker`, "marker");
+
+                    browser.runtime.sendMessage({
+                        type: "FORWARD_MARKER_TO_TAB",
+                        data: msg.markerData,
+                        message: markerMsg
+                    });
+                }
+
+
 
             });
 
