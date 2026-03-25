@@ -460,7 +460,7 @@ function updateButtonStates() {
 
     for (const [color, { el, shadow }] of Object.entries(buttons)) {
         const active = selectedColor === color;
-        el.style.opacity   = active ? '1' : '0.5';
+        el.style.opacity = active || selectedColor === null ? '1' : '0.5';
         el.style.transform = active ? 'scale(1.1)' : 'scale(1)';
         el.style.boxShadow = active ? `0 0 15px ${shadow}` : 'none';
     }

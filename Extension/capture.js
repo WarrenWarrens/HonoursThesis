@@ -255,26 +255,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
     stopBtn.addEventListener("click", stopCapture);
 
-    document.getElementById("downloadLogBtn").addEventListener("click", () => {
+    function downloadLog(format) {
         if (logData.length === 0) return;
 
-        const headers = ["Time", "Type", "Details"];
-        const rows = logData.map(e => [
-            `"${e.time}"`,
-            `"${e.type}"`,
-            `"${e.text.replace(/"/g, '""')}"` // escape any quotes in the text
-        ]);
+        const timestamp = new Date().toISOString().slice(0,19).replace(/[:T]/g, "-");
+        let content, mime, ext;
 
-        const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
+        if (format === 'csv') {
+            const headers = ["Time", "Type", "Details"];
+            const rows = logData.map(e => [
+                `"${e.time}"`,
+                `"${e.type}"`,
+                `"${e.text.replace(/"/g, '""')}"`
+            ]);
+            content = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+            mime = "text/csv";
+            ext = "csv";
+        } else {
+            content = logData.map(e => `[${e.time}] (${e.type}) ${e.text}`).join("\n");
+            mime = "text/plain";
+            ext = "txt";
+        }
 
         const a = document.createElement("a");
-        a.href = url;
-        a.download = `stream-log-${new Date().toISOString().slice(0,19).replace(/[:T]/g, "-")}.csv`;
+        a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+        a.download = `stream-log-${timestamp}.${ext}`;
         a.click();
-        URL.revokeObjectURL(url);
-    });
+        URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById("downloadCsvBtn").addEventListener("click", () => downloadLog('csv'));
+    document.getElementById("downloadTxtBtn").addEventListener("click", () => downloadLog('txt'));
+
+    // document.getElementById("downloadLogBtn").addEventListener("click", () => {
+    //     if (logData.length === 0) return;
+    //
+    //     const headers = ["Time", "Type", "Details"];
+    //     const rows = logData.map(e => [
+    //         `"${e.time}"`,
+    //         `"${e.type}"`,
+    //         `"${e.text.replace(/"/g, '""')}"` // escape any quotes in the text
+    //     ]);
+    //
+    //     const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    //     const blob = new Blob([csv], { type: "text/csv" });
+    //     const url = URL.createObjectURL(blob);
+    //
+    //     const a = document.createElement("a");
+    //     a.href = url;
+    //     a.download = `stream-log-${new Date().toISOString().slice(0,19).replace(/[:T]/g, "-")}.csv`;
+    //     a.click();
+    //     URL.revokeObjectURL(url);
+    // });
 
     let hideTimeout;
     function showMessageOverlay(text) {
