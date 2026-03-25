@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const overlay = document.getElementById("overlay-container");
     const overlayHeader = document.getElementById("overlay-header");
     let offsetX = 0, offsetY = 0, isDragging = false;
-
+    const logData = []; // structured entries for CSV export
     // CHANGED: green → yellow with correct hex
 
     const colorMap = {
@@ -53,6 +53,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewerNames = new Map();
 
     function addLogEntry(text, type) {
+        // const entriesEl = document.getElementById("activity-log-entries");
+        // if (!entriesEl) return;
+        //
+        // const now = new Date();
+        // const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        //
+        // const entry = document.createElement("div");
+        // entry.className = "log-entry";
+        // entry.innerHTML = `<span class="log-time">[${time}]</span><span class="log-${type}">${text}</span>`;
+        //
+        // entriesEl.appendChild(entry);
+        // // Keep scrolled to bottom
+        // entriesEl.scrollTop = entriesEl.scrollHeight;
+        // logData.push({ time, type, text });
+
         const entriesEl = document.getElementById("activity-log-entries");
         if (!entriesEl) return;
 
@@ -62,10 +77,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const entry = document.createElement("div");
         entry.className = "log-entry";
         entry.innerHTML = `<span class="log-time">[${time}]</span><span class="log-${type}">${text}</span>`;
-
         entriesEl.appendChild(entry);
-        // Keep scrolled to bottom
         entriesEl.scrollTop = entriesEl.scrollHeight;
+
+        // Store structured data for export
+        logData.push({ time, type, text });
+
     }
 
 
@@ -235,7 +252,29 @@ document.addEventListener("DOMContentLoaded", () => {
         ws?.close();
     }
 
+
     stopBtn.addEventListener("click", stopCapture);
+
+    document.getElementById("downloadLogBtn").addEventListener("click", () => {
+        if (logData.length === 0) return;
+
+        const headers = ["Time", "Type", "Details"];
+        const rows = logData.map(e => [
+            `"${e.time}"`,
+            `"${e.type}"`,
+            `"${e.text.replace(/"/g, '""')}"` // escape any quotes in the text
+        ]);
+
+        const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `stream-log-${new Date().toISOString().slice(0,19).replace(/[:T]/g, "-")}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
 
     let hideTimeout;
     function showMessageOverlay(text) {
