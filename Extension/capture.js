@@ -153,7 +153,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     const markerMsg = msg.message || '';
 
                     showMarkerOnVideo(xPercent, yPercent, markerMsg, color);
-                    addLogEntry(`${name}: ${color} marker`, "marker");
+
+                    const pos = `(${xPercent.toFixed(1)}%, ${yPercent.toFixed(1)}%)`;
+                    const detail = color === 'blue' && markerMsg ? `: "${markerMsg}"` : '';
+                    addLogEntry(`${name}: ${color} marker @ ${pos}${detail}`, "marker");
 
                     browser.runtime.sendMessage({
                         type: "FORWARD_MARKER_TO_TAB",
