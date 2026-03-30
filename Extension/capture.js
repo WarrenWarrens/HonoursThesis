@@ -85,6 +85,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+    function addViewer(name) {
+        const entriesEl = document.getElementById("viewer-list-entries");
+        if (!entriesEl) return;
+
+        const entry = document.createElement("div");
+        entry.className = "viewer-entry";
+        entry.id = `viewer-entry-${name.replace(/\s/g, '-')}`;
+        entry.textContent = `● ${name}`;
+        entriesEl.appendChild(entry);
+
+        updateViewerCount();
+    }
+
+    function removeViewer(name) {
+        const entry = document.getElementById(`viewer-entry-${name.replace(/\s/g, '-')}`);
+        if (entry) entry.remove();
+        updateViewerCount();
+    }
+
+    function updateViewerCount() {
+        const countEl = document.getElementById("viewer-count");
+        const entriesEl = document.getElementById("viewer-list-entries");
+        if (countEl && entriesEl) {
+            countEl.textContent = entriesEl.children.length;
+        }
+    }
+
 
     startBtn.addEventListener("click", async () => {
         try {
@@ -136,6 +163,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     const name = msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
                     viewerNames.set(msg.id, name);
                     addLogEntry(`${name} joined`, "join");
+                    addViewer(name);                    // ← add this
+
                     await createOffer(msg.id);
 
                 } else if (msg.type === "answer") {
@@ -159,7 +188,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const name = viewerNames.get(msg.id) || msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
                     viewerNames.delete(msg.id);
                     addLogEntry(`${name} left`, "leave");
-                    const pc = pcs.get(msg.id);
+                    removeViewer(name);                 // ← add this
+
+                     const pc = pcs.get(msg.id);
                     if (pc) { pc.close(); pcs.delete(msg.id); }
 
                 }
@@ -249,6 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stopBtn.disabled = true;
         for (const [, pc] of pcs) pc.close();
         pcs.clear();
+        downloadLog('csv');
         ws?.close();
     }
 

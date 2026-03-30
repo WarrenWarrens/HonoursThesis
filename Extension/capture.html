@@ -128,6 +128,45 @@
       z-index: 9999;
     }
 
+    #viewer-list {
+      position: fixed;
+      bottom: 254px; /* sits just above the log */
+      right: 16px;
+      width: 280px;
+      background: rgba(20, 20, 20, 0.88);
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #e0e0e0;
+      overflow: hidden;
+      z-index: 9999;
+    }
+
+    #viewer-list-header {
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.07);
+      font-weight: bold;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      color: #aaa;
+      border-bottom: 1px solid #333;
+    }
+
+    #viewer-list-entries {
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .viewer-entry {
+      color: #4caf50;
+      line-height: 1.4;
+    }
+
     #activity-log-header {
       padding: 6px 10px;
       background: rgba(255,255,255,0.07);
@@ -221,6 +260,13 @@
 
   <div id="overlay-header">Messages (drag me)</div>
   <div id="overlay-content"></div>
+</div>
+
+
+<!-- Add this ABOVE the existing activity-log div -->
+<div id="viewer-list">
+  <div id="viewer-list-header">Viewers (<span id="viewer-count">0</span>)</div>
+  <div id="viewer-list-entries"></div>
 </div>
 
 <div id="activity-log">
