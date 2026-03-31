@@ -443,7 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     }
 
-    function showMarkerOnVideo(xPercent, yPercent, message, color) {
+    function showMarkerOnVideo(xPercent, yPercent, message, color, viewerName) {
         const markerColor = colorMap[color] || '#ff0000';
         const duration = markerDuration[color] || 5000;
 
