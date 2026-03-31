@@ -285,6 +285,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ws?.close();
     }
 
+    document.getElementById("clearMarkersBtn").addEventListener("click", () => {
+        [...activeMarkers].forEach(wrapper => {
+            wrapper.style.transition = "opacity 0.3s";
+            wrapper.style.opacity = "0";
+            setTimeout(() => wrapper.remove(), 300);
+        });
+        activeMarkers.length = 0;
+
+        // remove all viewer highlights
+        viewerMarkerCount.clear();
+        document.querySelectorAll(".viewer-entry.marker-active")
+            .forEach(el => el.classList.remove("marker-active"));
+    });
+
 
     stopBtn.addEventListener("click", stopCapture);
 

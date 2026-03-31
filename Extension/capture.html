@@ -270,9 +270,15 @@
 </div>
 
 
-<!-- Add this ABOVE the existing activity-log div -->
 <div id="viewer-list">
-  <div id="viewer-list-header">Viewers (<span id="viewer-count">0</span>)</div>
+  <div id="viewer-list-header">
+    Viewers (<span id="viewer-count">0</span>)
+    <button id="clearMarkersBtn" title="Clear all markers" style="
+        float: right; background: transparent; border: 1px solid #666;
+        color: #aaa; border-radius: 4px; padding: 1px 6px;
+        cursor: pointer; font-size: 10px; line-height: 1.4;
+    ">Clear All</button>
+  </div>
   <div id="viewer-list-entries"></div>
 </div>
 

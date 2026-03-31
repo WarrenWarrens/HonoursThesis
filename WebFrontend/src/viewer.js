@@ -198,7 +198,7 @@ function showLocalMarker(x, y, color) {
         marker.style.transition = "opacity 0.5s ease";
         marker.style.opacity = "0";
         setTimeout(() => marker.remove(), 500);
-    }, 1000);
+    }, 500);
 }
 
 function showBluePopup() {
