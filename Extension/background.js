@@ -12,7 +12,7 @@
 // function showNotificationPopup() {
 //     browser.notifications.create({
 //         "type": "basic",
-//         "iconUrl": "icons/icon.png",
+//         "iconUrl": "icons/old.png",
 //         "title": "Viewer Interaction",
 //         "message": "A viewer pressed the notify button!"
 //     });
@@ -24,7 +24,7 @@ browser.runtime.onMessage.addListener((msg) => {
     if (msg.type === "viewer_notify") {
         browser.notifications.create({
             type: "basic",
-            iconUrl: "icons/icon.png",
+            iconUrl: "icons/old.png",
             title: "Viewer Interaction",
             message: "A viewer pressed the notify button!"
         });
@@ -94,7 +94,7 @@ browser.runtime.onMessage.addListener((msg) => {
 //     if (msg.type === "viewer_notify") {
 //         browser.notifications.create({
 //             type: "basic",
-//             iconUrl: "icons/icon.png",
+//             iconUrl: "icons/old.png",
 //             title: "Viewer Interaction",
 //             message: "A viewer pressed the notify button!"
 //         });
@@ -134,7 +134,7 @@ browser.runtime.onMessage.addListener((msg) => {
 //     if (msg.type === "viewer_notify") {
 //         browser.notifications.create({
 //             type: "basic",
-//             iconUrl: "icons/icon.png",
+//             iconUrl: "icons/old.png",
 //             title: "Viewer Interaction",
 //             message: "A viewer pressed the notify button!"
 //         });
