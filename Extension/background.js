@@ -30,6 +30,23 @@ browser.runtime.onMessage.addListener((msg) => {
         });
     }
 
+    if (msg.type === "CLEAR_VIEWER_MARKERS") {
+        browser.tabs.query({ active: true, lastFocusedWindow: true }).then((tabs) => {
+            if (!tabs.length) return;
+            const tab = tabs[0];
+            if (!tab.url ||
+                tab.url.startsWith("about:") ||
+                tab.url.startsWith("chrome://") ||
+                tab.url.startsWith("resource://") ||
+                tab.url.startsWith("moz-extension://")) return;
+
+            browser.tabs.sendMessage(tab.id, {
+                type: "CLEAR_VIEWER_MARKERS",
+                viewerName: msg.viewerName
+            }).catch(() => {});
+        });
+    }
+
     if (msg.type === "FORWARD_MARKER_TO_TAB") {
         browser.tabs.query({ active: true, lastFocusedWindow: true }).then((tabs) => {
             if (!tabs.length) return;
@@ -49,7 +66,9 @@ browser.runtime.onMessage.addListener((msg) => {
             const payload = {
                 type: "SHOW_MARKER",
                 data: msg.data,
-                message: msg.message
+                message: msg.message,
+                viewerName: msg.viewerName
+
             };
 
             browser.tabs.sendMessage(tab.id, payload).catch(() => {

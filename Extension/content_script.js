@@ -8,6 +8,7 @@ const colorMap = {
 // --- Profanity filter ---
 const BANNED_WORDS = ['shit', 'fuck', 'ass', 'bitch', 'cunt', 'damn', 'piss', 'cock', 'dick'];
 
+
 function censorMessage(text) {
     if (!text) return text;
     let censored = text;
@@ -23,7 +24,7 @@ const markerDuration = {
     red: 10000,
     blue: 7000,
     yellow: 5000,
-    green: 5000         // ← add
+    green: 5000
 };
 
 
@@ -40,8 +41,9 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Track active markers for the 7-marker limit
 const activeMarkers = [];
+const markersByViewer = new Map();
+
 const MAX_MARKERS = 7;
 
 browser.runtime.onMessage.addListener((msg) => {
@@ -109,6 +111,13 @@ browser.runtime.onMessage.addListener((msg) => {
         document.body.appendChild(marker);
         activeMarkers.push(marker);
 
+        if (msg.viewerName) {
+            if (!markersByViewer.has(msg.viewerName)) {
+                markersByViewer.set(msg.viewerName, []);
+            }
+            markersByViewer.get(msg.viewerName).push(marker);
+        }
+
         setTimeout(() => {
             marker.style.transition = "opacity 0.5s";
             marker.style.opacity = "0";
@@ -118,5 +127,19 @@ browser.runtime.onMessage.addListener((msg) => {
                 if (idx > -1) activeMarkers.splice(idx, 1);
             }, 500);
         }, duration);
+    }
+
+    if (msg.type === "CLEAR_VIEWER_MARKERS" && msg.viewerName) {
+        const markers = markersByViewer.get(msg.viewerName) || [];
+        markers.forEach(m => {
+            m.style.transition = "opacity 0.3s";
+            m.style.opacity = "0";
+            setTimeout(() => {
+                m.remove();
+                const idx = activeMarkers.indexOf(m);
+                if (idx > -1) activeMarkers.splice(idx, 1);
+            }, 300);
+        });
+        markersByViewer.delete(msg.viewerName);
     }
 });

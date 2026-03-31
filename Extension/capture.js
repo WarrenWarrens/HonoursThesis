@@ -134,6 +134,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function clearViewerMarkers(name) {
         const toRemove = activeMarkers.filter(w => w._viewerName === name);
         toRemove.forEach(w => w._dismiss && w._dismiss());
+
+        browser.runtime.sendMessage({
+            type: "CLEAR_VIEWER_MARKERS",
+            viewerName: name
+        });
     }
 
     function muteViewer(id, name) {
@@ -281,7 +286,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     browser.runtime.sendMessage({
                         type: "FORWARD_MARKER_TO_TAB",
                         data: msg.markerData,
-                        message: markerMsg
+                        message: markerMsg,
+                        viewerName: name
+
                     });
                 }
 
