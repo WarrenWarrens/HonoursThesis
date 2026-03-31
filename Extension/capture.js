@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let offsetX = 0, offsetY = 0, isDragging = false;
     const logData = []; // structured entries for CSV export
     // CHANGED: green → yellow with correct hex
-
+    const viewerMarkerCount = new Map(); // tracks how many active markers each viewer has
     const colorMap = {
         red:    '#ff0000',
         blue:   '#0066ff',
@@ -200,7 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     const { xPercent, yPercent, color } = msg.markerData;
                     const markerMsg = msg.message || '';
 
-                    showMarkerOnVideo(xPercent, yPercent, markerMsg, color);
+                    showMarkerOnVideo(xPercent, yPercent, markerMsg, color, name);  // ← add name
+
 
                     const pos = `(${xPercent.toFixed(1)}%, ${yPercent.toFixed(1)}%)`;
                     const detail = color === 'blue' && markerMsg ? `: "${markerMsg}"` : '';
@@ -433,7 +434,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         closeBtn.addEventListener("mouseenter", () => { closeBtn.style.opacity = "1"; });
 
-        // Dismiss on click
         function dismiss() {
             wrapper.style.transition = "opacity 0.3s";
             wrapper.style.opacity = "0";
@@ -441,11 +441,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 wrapper.remove();
                 const idx = activeMarkers.indexOf(wrapper);
                 if (idx > -1) activeMarkers.splice(idx, 1);
+                if (viewerName) {
+                    const remaining = (viewerMarkerCount.get(viewerName) || 1) - 1;
+                    viewerMarkerCount.set(viewerName, remaining);
+                    if (remaining <= 0) {
+                        const entryEl = document.getElementById(`viewer-entry-${viewerName.replace(/\s/g, '-')}`);
+                        if (entryEl) entryEl.classList.remove("marker-active");
+                        viewerMarkerCount.delete(viewerName);
+                    }
+                }
             }, 300);
+
+
         }
+
         closeBtn.addEventListener("click", dismiss);
 
         document.body.appendChild(wrapper);
+
+
 
         showMessageOverlay(message);
         activeMarkers.push(wrapper);
