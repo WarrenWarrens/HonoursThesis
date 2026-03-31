@@ -14,6 +14,8 @@ let ws, pc;
 let currentCode = null;
 let selectedColor = null;
 let pendingBlueMarker = null;
+let isMuted = false;
+
 
 const colorMap = {
     red:    '#ff0000',
@@ -80,7 +82,8 @@ function startViewer(code) {
     };
 
     videoEl.addEventListener("click", (event) => {
-        if (ws?.readyState !== WebSocket.OPEN || !selectedColor) return;
+        if (ws?.readyState !== WebSocket.OPEN || !selectedColor || isMuted) return;
+
 
         const rect = videoEl.getBoundingClientRect();
         const xPercent = ((event.clientX - rect.left) / rect.width) * 100;
@@ -103,6 +106,12 @@ function startViewer(code) {
             joinForm.style.display = "flex";
             streamContainer.style.display = "none";
             return;
+        }
+        else if (msg.type === "muted") {
+            isMuted = true;
+            setTimeout(() => {
+                isMuted = false;
+            }, msg.duration || 300000);
         }
 
         if (msg.type === "offer") {

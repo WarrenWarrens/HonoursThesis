@@ -59,7 +59,8 @@ wss.on("connection", (ws, req) => {
 
     if (role === "broadcaster") {
         const roomCode = generateRoomCode();
-        broadcasters.set(roomCode, { ws, viewers: new Map() });
+        broadcasters.set(roomCode, { ws, viewers: new Map(), muted: new Set() });
+
         ws.roomCode = roomCode;
 
         console.log(`Broadcaster started stream with code ${roomCode}`);
@@ -81,6 +82,18 @@ wss.on("connection", (ws, req) => {
         ws.on("message", (message) => {
             const msg = JSON.parse(message);
             console.log("server: received message from broadcaster:", msg.type, msg);
+
+            if (msg.type === "mute-viewer" && msg.id) {
+                const room = broadcasters.get(roomCode);
+                if (!room) return;
+                room.muted.add(msg.id);
+                const viewer = room.viewers.get(msg.id);
+                if (viewer?.ws?.readyState === 1) {
+                    viewer.ws.send(JSON.stringify({ type: "muted", duration: 300000 }));
+                }
+                setTimeout(() => room.muted.delete(msg.id), 300000);
+                return;
+            }
 
             if (msg.id && msg.type !== "room-code") {
                 const room   = broadcasters.get(roomCode);
@@ -119,6 +132,8 @@ wss.on("connection", (ws, req) => {
             console.log(`server: received message from viewer ${id} (${viewerName}):`, msg.type);
 
             if (msg.type === "viewerMessage" || msg.type === "viewer_notify") {
+                if (room.muted.has(id)) return;
+
                 if (room.ws && room.ws.readyState === 1) {
                     const messageToSend = {
                         ...msg,         // preserves markerData, message, etc.

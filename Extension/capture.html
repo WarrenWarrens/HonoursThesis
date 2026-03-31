@@ -199,6 +199,42 @@
       line-height: 1.4;
     }
 
+    .viewer-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      line-height: 1.4;
+    }
+
+    .viewer-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .viewer-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .viewer-action-btn {
+      background: transparent;
+      border: 1px solid #555;
+      color: #aaa;
+      border-radius: 3px;
+      padding: 1px 5px;
+      cursor: pointer;
+      font-size: 10px;
+      line-height: 1.4;
+      transition: all 0.15s;
+    }
+    .viewer-action-btn:hover { border-color: #aaa; color: white; }
+    .viewer-action-btn:disabled { opacity: 0.4; cursor: default; }
+    .viewer-action-btn.muted { border-color: #f44336; color: #f44336; }
+
+    .viewer-entry.muted .viewer-name { color: #f44336; opacity: 0.7; }
+
     .log-time  { color: #888; flex-shrink: 0; }
     .log-join  { color: #4caf50; }
     .log-leave { color: #f44336; }

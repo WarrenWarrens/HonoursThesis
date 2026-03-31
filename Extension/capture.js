@@ -85,17 +85,87 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
-    function addViewer(name) {
+    // function addViewer(name) {
+    //     const entriesEl = document.getElementById("viewer-list-entries");
+    //     if (!entriesEl) return;
+    //
+    //     const entry = document.createElement("div");
+    //     entry.className = "viewer-entry";
+    //     entry.id = `viewer-entry-${name.replace(/\s/g, '-')}`;
+    //     entry.textContent = `● ${name}`;
+    //     entriesEl.appendChild(entry);
+    //
+    //     updateViewerCount();
+    // }
+
+    function addViewer(id, name) {
         const entriesEl = document.getElementById("viewer-list-entries");
         if (!entriesEl) return;
 
         const entry = document.createElement("div");
         entry.className = "viewer-entry";
         entry.id = `viewer-entry-${name.replace(/\s/g, '-')}`;
-        entry.textContent = `● ${name}`;
-        entriesEl.appendChild(entry);
+        entry.innerHTML = `
+        <span class="viewer-name">● ${name}</span>
+        <div class="viewer-actions">
+            <button class="viewer-action-btn viewer-clear-btn" title="Clear markers">🗑</button>
+            <button class="viewer-action-btn viewer-mute-btn" title="Mute for 5 min">🔇</button>
+        </div>
+    `;
 
+        entry.querySelector(".viewer-clear-btn").addEventListener("click", () => {
+            clearViewerMarkers(name);
+        });
+
+        entry.querySelector(".viewer-mute-btn").addEventListener("click", () => {
+            muteViewer(id, name);
+        });
+
+        entriesEl.appendChild(entry);
         updateViewerCount();
+    }
+
+    function moveViewerToTop(name) {
+        const entriesEl = document.getElementById("viewer-list-entries");
+        const entryEl = document.getElementById(`viewer-entry-${name.replace(/\s/g, '-')}`);
+        if (entriesEl && entryEl) entriesEl.prepend(entryEl);
+    }
+
+    function clearViewerMarkers(name) {
+        const toRemove = activeMarkers.filter(w => w._viewerName === name);
+        toRemove.forEach(w => w._dismiss && w._dismiss());
+    }
+
+    function muteViewer(id, name) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(JSON.stringify({ type: "mute-viewer", id }));
+
+        const entryEl = document.getElementById(`viewer-entry-${name.replace(/\s/g, '-')}`);
+        if (!entryEl) return;
+
+        entryEl.classList.add("muted");
+        const muteBtn = entryEl.querySelector(".viewer-mute-btn");
+        muteBtn.disabled = true;
+        muteBtn.classList.add("muted");
+
+        let remaining = 300;
+        const tick = () => {
+            muteBtn.textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
+        };
+        tick();
+
+        const interval = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) {
+                clearInterval(interval);
+                muteBtn.textContent = "🔇";
+                muteBtn.disabled = false;
+                muteBtn.classList.remove("muted");
+                entryEl.classList.remove("muted");
+            } else {
+                tick();
+            }
+        }, 1000);
     }
 
     function removeViewer(name) {
@@ -158,12 +228,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
                     });
 
-                }// AFTER
+                }
                 else if (msg.type === "viewer-joined") {
                     const name = msg.viewerName || `Viewer-${msg.id.slice(0, 4)}`;
                     viewerNames.set(msg.id, name);
                     addLogEntry(`${name} joined`, "join");
-                    addViewer(name);                    // ← add this
+                    addViewer(msg.id, name);
 
                     await createOffer(msg.id);
 
@@ -201,6 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const markerMsg = msg.message || '';
 
                     showMarkerOnVideo(xPercent, yPercent, markerMsg, color, name);  // ← add name
+                    moveViewerToTop(name);   // ← add this
 
 
                     const pos = `(${xPercent.toFixed(1)}%, ${yPercent.toFixed(1)}%)`;
@@ -472,6 +543,8 @@ document.addEventListener("DOMContentLoaded", () => {
         closeBtn.addEventListener("click", dismiss);
 
         document.body.appendChild(wrapper);
+        wrapper._viewerName = viewerName || '';   // ← add
+        wrapper._dismiss = dismiss;               // ← add
 
 
 
